@@ -1,0 +1,9 @@
+[submodule "tdl-local-s3"]
+	path = tdl-local-s3
+	url = git@github.com:julianghionoiu/tdl-local-s3.git
+[submodule "tdl-local-sqs"]
+	path = tdl-local-sqs
+	url = git@github.com:julianghionoiu/tdl-local-sqs.git
+[submodule "tdl-local-ecs"]
+	path = tdl-local-ecs
+	url = git@github.com:julianghionoiu/tdl-local-ecs
