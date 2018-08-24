@@ -31,7 +31,7 @@ echo  "~~~~~~ Download and merge video into accumulator ~~~~~~" > /dev/null
 ### --- do merge video and upload stuff here
 
 echo  "~~~~~~ Publish results ~~~~~~" > /dev/null
-coverage_value=$(cat "${COVERAGE_FILE}" | tr -d " " | tr -d "\n")
+merged_video_status="n video merged"
 
 if [[ "${SQS_QUEUE_URL}" != http* ]]; then
     echo "SQS_QUEUE_URL does not seem to be valid. Will print to the console and exit" > /dev/null
@@ -39,7 +39,7 @@ if [[ "${SQS_QUEUE_URL}" != http* ]]; then
     exit 0
 fi
 
-echo "Publish coverage to interop event queue" > /dev/null
+echo "Publish video to interop event queue" > /dev/null
 INTEROP_QUEUE_CONFIG="${WORK_DIR}/sqs_queue.conf"
 cat > ${INTEROP_QUEUE_CONFIG} <<EOL
 sqs {
@@ -51,6 +51,6 @@ EOL
 cat ${INTEROP_QUEUE_CONFIG}
 DRY_RUN=false java -Dconfig.file="${INTEROP_QUEUE_CONFIG}" \
     -jar "${WORK_DIR}/queue-cli-tool-all.jar" \
-    send coverageComputed \
+    send videosMerged \
     participant=${PARTICIPANT_ID} roundId=${ROUND_ID}
 # Output: Public URL published to SQS or printed on the console
