@@ -1,0 +1,21 @@
+*.class
+.gradle
+.idea
+/build/
+/bin/
+/.settings/
+.project
+.classpath
+out
+.DS_Store
+
+# Serverless directories
+.serverless
+
+/.nb-gradle/
+node_modules
+
+tmp
+config/live*
+config/dev*
+.private
