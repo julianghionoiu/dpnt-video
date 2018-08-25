@@ -2,8 +2,6 @@
 
 Merge videos uploaded by user
 
-- [Hmmm](./container/images/hmmm/)
-
 ### Updating sub-modules
 
 Root project contains three git submodules:
@@ -27,10 +25,9 @@ python local-s3/minio-wrapper.py start
 minio config host add myminio http://192.168.1.190:9000 local_test_access_key local_test_secret_key
 ```
 
-We use the `hmmm` language to test the application.
-The language container image needs to be build and tagged as `latest`:
+The base container image needs to be build and tagged as `latest`:
 ```bash
-./container/buildDockerImage.sh hmmm
+./container/buildDockerImage.sh
 ```
 
 **Note: to avoid failing VideoUploadAcceptanceTest acceptance tests due to timeouts please follow the below instructions** 

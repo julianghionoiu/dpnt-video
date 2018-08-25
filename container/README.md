@@ -1,7 +1,7 @@
 
 # The video upload container
 
-Use the scripts provided to create the language specific containers.
+Use the scripts provided to create the base container.
 
 The build follows a single-stage process:
 1. Build the base image `./base`
@@ -15,8 +15,6 @@ In order to run this in one go, you can use:
 
 Each folder, including `base` contains a `version.txt` file.
 This file should be incremented when the version changes.
-
-The `base` image version is injected into the language specific images via the use of ARG in Dockerfile.
 
 The `latest` tag has a special meaning and it is used by the ECS local simulator to match the Docker container to be run.
 
@@ -53,9 +51,6 @@ By running the `local-ecs` and then the Acceptance test, one will cover the:
 - merge video(s) to accumulator video
 - uploading accumulator video to S3 bucket 
 - publishing public URL to SQS
-
-This testing does not cover language specific support. That should be covered by the container tests.
-
 
 ## Debugging container
 

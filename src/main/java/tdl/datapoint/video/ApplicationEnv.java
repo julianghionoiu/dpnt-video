@@ -1,0 +1,19 @@
+package tdl.datapoint.video;
+
+public enum ApplicationEnv {
+    S3_ENDPOINT,
+    S3_REGION,
+
+    ECS_ENDPOINT,
+    ECS_REGION,
+    ECS_TASK_CLUSTER,
+    ECS_TASK_DEFINITION_PREFIX,
+    ECS_TASK_LAUNCH_TYPE,
+    ECS_VPC_SUBNET,
+    ECS_VPC_SECURITY_GROUP,
+    ECS_VPC_ASSIGN_PUBLIC_IP,
+
+    SQS_ENDPOINT,
+    SQS_REGION,
+    SQS_QUEUE_URL,
+}
