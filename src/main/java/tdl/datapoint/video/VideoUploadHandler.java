@@ -12,20 +12,12 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.jgit.api.Git;
 import tdl.datapoint.video.processing.ECSVideoTaskRunner;
-import tdl.datapoint.video.processing.LocalGitClient;
 import tdl.datapoint.video.processing.S3BucketEvent;
-import tdl.datapoint.video.processing.S3SrcsToGitExporter;
-import tdl.participant.queue.connector.SqsEventQueue;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static tdl.datapoint.video.ApplicationEnv.ECS_ENDPOINT;
 import static tdl.datapoint.video.ApplicationEnv.ECS_REGION;
@@ -37,25 +29,12 @@ import static tdl.datapoint.video.ApplicationEnv.ECS_VPC_SECURITY_GROUP;
 import static tdl.datapoint.video.ApplicationEnv.ECS_VPC_SUBNET;
 import static tdl.datapoint.video.ApplicationEnv.S3_ENDPOINT;
 import static tdl.datapoint.video.ApplicationEnv.S3_REGION;
-import static tdl.datapoint.video.ApplicationEnv.SQS_ENDPOINT;
-import static tdl.datapoint.video.ApplicationEnv.SQS_QUEUE_URL;
-import static tdl.datapoint.video.ApplicationEnv.SQS_REGION;
 
 public class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> {
     private static final Logger LOG = Logger.getLogger(VideoUploadHandler.class.getName());
-    private AmazonS3 s3Client;
-    private SqsEventQueue participantEventQueue;
-    private S3SrcsToGitExporter srcsToGitExporter;
     private final ECSVideoTaskRunner ecsVideoTaskRunner;
+    private AmazonS3 s3Client;
     private ObjectMapper jsonObjectMapper;
-
-    private static String getEnv(ApplicationEnv key) {
-        String env = System.getenv(key.name());
-        if (env == null || env.trim().isEmpty() || "null".equals(env)) {
-            throw new RuntimeException("[Startup] Environment variable " + key + " not set");
-        }
-        return env;
-    }
 
     @SuppressWarnings("WeakerAccess")
     public VideoUploadHandler() {
@@ -75,16 +54,15 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
                 getEnv(ECS_VPC_SECURITY_GROUP),
                 getEnv(ECS_VPC_ASSIGN_PUBLIC_IP));
 
-        srcsToGitExporter = new S3SrcsToGitExporter();
-
-        AmazonSQS queueClient = createSQSClient(
-                getEnv(SQS_ENDPOINT),
-                getEnv(SQS_REGION)
-        );
-        String queueUrl = getEnv(SQS_QUEUE_URL);
-        participantEventQueue = new SqsEventQueue(queueClient, queueUrl);
-
         jsonObjectMapper = new ObjectMapper();
+    }
+
+    private static String getEnv(ApplicationEnv key) {
+        String env = System.getenv(key.name());
+        if (env == null || env.trim().isEmpty() || "null".equals(env)) {
+            throw new RuntimeException("[Startup] Environment variable " + key + " not set");
+        }
+        return env;
     }
 
     private static AmazonS3 createS3Client(String endpoint, String region) {
@@ -124,38 +102,14 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
         }
     }
 
-    private void handleS3Event(S3BucketEvent event) throws Exception {
-        LOG.info("Process S3 event with: "+event);
+    private void handleS3Event(S3BucketEvent event) {
+        LOG.info("Process S3 event with: " + event);
         String participantId = event.getParticipantId();
         String challengeId = event.getChallengeId();
 
-        LOG.info("Initialise local temp repo");
-        Path tempDirectory = Files.createTempDirectory(participantId);
-        Git localRepo = LocalGitClient.init(tempDirectory);
-        LOG.info("Local repo initialised at "+localRepo.getRepository().getDirectory());
-
-        LOG.info("Read repo from SRCS file "+event.getKey());
-        S3Object remoteSRCSFile = s3Client.getObject(event.getBucket(), event.getKey());
-        srcsToGitExporter.export(remoteSRCSFile, tempDirectory);
-        LOG.info("SRCS file exported to: " + tempDirectory);
-
-        LOG.info("Identify \"done\" tags");
-        List<String> doneTags = LocalGitClient.getTags(localRepo).stream()
-                .filter(s -> s.startsWith(challengeId))
-                .filter(s -> s.endsWith("/done"))
-                .collect(Collectors.toList());
-        if (doneTags.isEmpty()) {
-            LOG.info("No tags to process. Exiting");
-            return;
-        } else {
-            LOG.info("Relevant tags "+doneTags);
-        }
+        S3Object remoteVideoFile = s3Client.getObject(event.getBucket(), event.getKey());
 
         LOG.info("Triggering ECS to process video for tags");
-        for (String doneTag : doneTags) {
-            String roundId = doneTag.split("/")[0];
-            ecsVideoTaskRunner.runVideoTask(event.getBucket(), event.getKey(),
-                    participantId, challengeId, roundId, doneTag);
-        }
+        ecsVideoTaskRunner.runVideoTask(event.getBucket(), event.getKey(), participantId, challengeId, remoteVideoFile);
     }
 }

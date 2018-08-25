@@ -6,4 +6,4 @@
 	url = git@github.com:julianghionoiu/tdl-local-sqs.git
 [submodule "local-ecs"]
 	path = local-ecs
-	url = https://github.com/julianghionoiu/tdl-local-ecs
+	url = git@github.com/julianghionoiu/tdl-local-ecs

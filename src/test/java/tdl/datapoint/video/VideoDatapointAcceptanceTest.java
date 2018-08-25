@@ -53,10 +53,37 @@ public class VideoDatapointAcceptanceTest {
     private List<RawVideoUpdatedEvent> rawVideoUpdatedEvents;
     private ObjectMapper mapper;
 
+    private static String getEnv(ApplicationEnv key) {
+        String env = System.getenv(key.name());
+        if (env == null || env.trim().isEmpty() || "null".equals(env)) {
+            throw new RuntimeException("[Startup] Environment variable " + key + " not set");
+        }
+        return env;
+    }
+
+    private static void setEnvFrom(EnvironmentVariables environmentVariables, Path path) throws IOException {
+        String yamlString = Files.lines(path).collect(Collectors.joining("\n"));
+
+        Yaml yaml = new Yaml();
+        Map<String, String> values = yaml.load(yamlString);
+
+        values.forEach(environmentVariables::set);
+    }
+
+    private static String generateId() {
+        return UUID.randomUUID().toString().replaceAll("-", "");
+    }
+
+    private static Map<String, Object> convertToMap(String json) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.readValue(json, new TypeReference<Map<String, Object>>() {
+        });
+    }
+
     @Before
     public void setUp() throws EventProcessingException, IOException {
-        environmentVariables.set("AWS_ACCESS_KEY_ID","local_test_access_key");
-        environmentVariables.set("AWS_SECRET_KEY","local_test_secret_key");
+        environmentVariables.set("AWS_ACCESS_KEY_ID", "local_test_access_key");
+        environmentVariables.set("AWS_SECRET_KEY", "local_test_secret_key");
         setEnvFrom(environmentVariables, Paths.get("config", "local.params.yml"));
 
         localS3Bucket = LocalS3Bucket.createInstance(
@@ -78,54 +105,39 @@ public class VideoDatapointAcceptanceTest {
         mapper = new ObjectMapper();
     }
 
-    private static String getEnv(ApplicationEnv key) {
-        String env = System.getenv(key.name());
-        if (env == null || env.trim().isEmpty() || "null".equals(env)) {
-            throw new RuntimeException("[Startup] Environment variable " + key + " not set");
-        }
-        return env;
-    }
-
-    private static void setEnvFrom(EnvironmentVariables environmentVariables, Path path) throws IOException {
-        String yamlString = Files.lines(path).collect(Collectors.joining("\n"));
-
-        Yaml yaml = new Yaml();
-        Map<String, String> values = yaml.load(yamlString);
-
-        values.forEach(environmentVariables::set);
-    }
-
     @After
     public void tearDown() throws Exception {
         sqsEventQueue.unsubscribeFromMessages();
     }
 
+    //~~~~~~~~~~ Helpers ~~~~~~~~~~~~~`
+
     @Test
-    public void create_repo_and_uploads_commits() throws Exception {
-        // Given - The participant produces SRCS files while solving a challenge
+    public void create_repo_and_upload_video() throws Exception {
+        // Given - The participant produces Video files while solving a challenge
         String challengeId = "TCH";
         String participantId = generateId();
-        String s3destination = String.format("%s/%s/file.srcs", challengeId, participantId);
-        TestVideoFile srcsForTestChallenge = new TestVideoFile("HmmmLang_R1Cov33_R2Cov44.srcs");
+        String s3destination = String.format("%s/%s/video.mp4", challengeId, participantId);
+        TestVideoFile videoForTestChallenge = new TestVideoFile("screencast_20180727T144854.mp4");
 
         // When - Upload event happens
-        S3Event s3Event = localS3Bucket.putObject(srcsForTestChallenge.asFile(), s3destination);
+        S3Event s3Event = localS3Bucket.putObject(videoForTestChallenge.asFile(), s3destination);
         videoUploadHandler.handleRequest(
                 convertToMap(wrapAsSNSEvent(s3Event)),
                 NO_CONTEXT);
         waitForQueueToReceiveEvents();
 
         // Then - Raw video uploaded events are computed for the deploy tags
-        assertThat(rawVideoUpdatedEvents.size(), equalTo(2));
-        System.out.println("Received video events: "+ rawVideoUpdatedEvents);
+        assertThat("Raw video update events match: 1 event expected", rawVideoUpdatedEvents.size(), equalTo(1));
+        System.out.println("Received video events: " + rawVideoUpdatedEvents);
         rawVideoUpdatedEvents.sort(Comparator.comparing(RawVideoUpdatedEvent::getChallengeId));
         RawVideoUpdatedEvent rawVideoUploadedRound1 = rawVideoUpdatedEvents.get(0);
         assertThat(rawVideoUploadedRound1.getParticipant(), equalTo(participantId));
-        assertThat(rawVideoUploadedRound1.getChallengeId(), equalTo(challengeId+"_R1"));
+        assertThat(rawVideoUploadedRound1.getChallengeId(), equalTo(challengeId + "_R1"));
         assertThat(rawVideoUploadedRound1.getVideoLink(), equalTo(33));
         RawVideoUpdatedEvent rawVideoUploadedRound2 = rawVideoUpdatedEvents.get(1);
         assertThat(rawVideoUploadedRound2.getParticipant(), equalTo(participantId));
-        assertThat(rawVideoUploadedRound2.getChallengeId(), equalTo(challengeId+"_R2"));
+        assertThat(rawVideoUploadedRound2.getChallengeId(), equalTo(challengeId + "_R2"));
         assertThat(rawVideoUploadedRound2.getVideoLink(), equalTo(44));
     }
 
@@ -134,22 +146,11 @@ public class VideoDatapointAcceptanceTest {
         return mapper.writeValueAsString(snsEvent.asJsonNode());
     }
 
-    //~~~~~~~~~~ Helpers ~~~~~~~~~~~~~`
-
     private void waitForQueueToReceiveEvents() throws InterruptedException {
         int retryCtr = 0;
         while ((rawVideoUpdatedEvents.size() < 2) && (retryCtr < TASK_FINISH_CHECK_RETRY_COUNT)) {
             Thread.sleep(WAIT_BEFORE_RETRY_IN_MILLIS);
             retryCtr++;
         }
-    }
-
-    private static String generateId() {
-        return UUID.randomUUID().toString().replaceAll("-","");
-    }
-
-    private static Map<String, Object> convertToMap(String json) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(json, new TypeReference<Map<String, Object>>() {});
     }
 }

@@ -1,7 +1,13 @@
 package tdl.datapoint.video.processing;
 
 import com.amazonaws.services.ecs.AmazonECS;
-import com.amazonaws.services.ecs.model.*;
+import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
+import com.amazonaws.services.ecs.model.ContainerOverride;
+import com.amazonaws.services.ecs.model.KeyValuePair;
+import com.amazonaws.services.ecs.model.NetworkConfiguration;
+import com.amazonaws.services.ecs.model.RunTaskRequest;
+import com.amazonaws.services.ecs.model.TaskOverride;
+import com.amazonaws.services.s3.model.S3Object;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,8 +20,8 @@ public class ECSVideoTaskRunner {
     private static final Logger LOG = Logger.getLogger(ECSVideoTaskRunner.class.getName());
 
     private final String taskDefinitionPrefix;
-    private AmazonECS ecsClient;
     private final Supplier<RunTaskRequest> runTaskRequestSupplier;
+    private AmazonECS ecsClient;
 
     public ECSVideoTaskRunner(AmazonECS ecsClient,
                               String cluster,
@@ -46,20 +52,18 @@ public class ECSVideoTaskRunner {
     }
 
     public void runVideoTask(String bucket, String key, String participantId,
-                             String challengeId, String roundId,
-                             String tag) {
+                             String challengeId, S3Object video) {
         RunTaskRequest runTaskRequest = runTaskRequestSupplier.get();
         runTaskRequest.setTaskDefinition(this.taskDefinitionPrefix);
 
         HashMap<String, String> env = new HashMap<>();
         env.put("PARTICIPANT_ID", participantId);
-        env.put("ROUND_ID", roundId);
         env.put("REPO", "s3://" + bucket + "/" + key);
-        env.put("TAG", tag);
         env.put("CHALLENGE_ID", challengeId);
+        env.put("VIDEO", video.getKey());
         setTaskEnv(runTaskRequest, env);
 
-        LOG.info("Issuing RunTask command: "+runTaskRequest);
+        LOG.info("Issuing RunTask command: " + runTaskRequest);
         ecsClient.runTask(runTaskRequest);
     }
 
