@@ -16,57 +16,57 @@ provider:
 
   iamRoleStatements:
 
-    # List SRCS bucket
-    - Effect: "Allow"
-      Action:
-       - "s3:ListBucket"
-       - "s3:ListBucketMultipartUploads"
-      Resource:
-       - ${self:provider.environment.S3_BUCKET_ARN}
+  # List Videos bucket
+  - Effect: "Allow"
+    Action:
+    - "s3:ListBucket"
+    - "s3:ListBucketMultipartUploads"
+    Resource:
+    - ${self:provider.environment.S3_BUCKET_ARN}
 
-    # Read SRCS bucket
-    - Effect: "Allow"
-      Action:
-       - "s3:GetObject"
-      Resource:
-        Fn::Join:
-          - ""
-          - - ${self:provider.environment.S3_BUCKET_ARN}
-            - "/*"
+  # Read Videos bucket
+  - Effect: "Allow"
+    Action:
+    - "s3:GetObject"
+    Resource:
+      Fn::Join:
+      - ""
+      - - ${self:provider.environment.S3_BUCKET_ARN}
+        - "/*"
 
-    # Publish events
-    - Effect: "Allow"
-      Action:
-       - "sqs:GetQueueAttributes"
-       - "sqs:SendMessageBatch"
-       - "sqs:SendMessage"
-      Resource:
-       - ${self:provider.environment.SQS_QUEUE_ARN}
+  # Publish events
+  - Effect: "Allow"
+    Action:
+    - "sqs:GetQueueAttributes"
+    - "sqs:SendMessageBatch"
+    - "sqs:SendMessage"
+    Resource:
+    - ${self:provider.environment.SQS_QUEUE_ARN}
 
-    # Trigger ECS Task
-    - Effect: "Allow"
-      Action:
-       - "ecs:RunTask"
-      Resource:
-        Fn::Join:
-          - ""
-          - - "arn:aws:ecs:"
-            - ${self:provider.environment.ECS_REGION}
-            - ":"
-            - ${self:provider.environment.ECS_ACCOUNT_ID}
-            - ":task-definition/"
-            - ${self:provider.environment.ECS_TASK_DEFINITION_PREFIX}
-            - "*"
-    - Effect: "Allow"
-      Action:
-       - "iam:PassRole"
-      Resource:
-       - "arn:aws:iam::577770582757:role/ecsTaskExecutionRole"
-       - Fn::Join:
-         - ""
-         - - "arn:aws:iam::577770582757:role/"
-           - ${self:provider.environment.ECS_TASK_CLUSTER}
-           - "-taskRole"
+  # Trigger ECS Task
+  - Effect: "Allow"
+    Action:
+    - "ecs:RunTask"
+    Resource:
+      Fn::Join:
+      - ""
+      - - "arn:aws:ecs:"
+        - ${self:provider.environment.ECS_REGION}
+        - ":"
+        - ${self:provider.environment.ECS_ACCOUNT_ID}
+        - ":task-definition/"
+        - ${self:provider.environment.ECS_TASK_DEFINITION_PREFIX}
+        - "*"
+  - Effect: "Allow"
+    Action:
+    - "iam:PassRole"
+    Resource:
+    - "arn:aws:iam::577770582757:role/ecsTaskExecutionRole"
+    - Fn::Join:
+      - ""
+      - - "arn:aws:iam::577770582757:role/"
+        - ${self:provider.environment.ECS_TASK_CLUSTER}
+        - "-taskRole"
 
 package:
   artifact: build/libs/dpnt-video-all.jar

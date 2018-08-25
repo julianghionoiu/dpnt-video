@@ -65,9 +65,9 @@ For e.g.
 
 Inside the container under `/debug-repo/` you can place any repo or file or folders - volume sharing between host and container environments.
 
-In case a repo is placed there, and would like to pass it to the `download_and_merge_videos.sh` command:
+In case a repo is placed there, and would like to pass it to the `download_and_merge_video.sh` command:
 ```
-./download_and_merge_videos.sh [xxxxx] 
+./download_and_merge_video.sh [xxxxx] 
 
 xxxxx = participant round                                                    
 ``` 

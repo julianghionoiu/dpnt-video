@@ -18,6 +18,6 @@ ENV INTEROP_QUEUE_VERSION 0.1.18
 RUN wget https://github.com/julianghionoiu/tdl-interop-event-queue/releases/download/v${INTEROP_QUEUE_VERSION}/queue-cli-tool-${INTEROP_QUEUE_VERSION}-all.jar \
     -O ${WORKDIR}/queue-cli-tool-all.jar
 
-COPY download_and_merge_videos.sh ${WORKDIR}
+COPY download_and_merge_video.sh ${WORKDIR}
 
-ENTRYPOINT ${WORKDIR}/download_and_merge_videos.sh
+ENTRYPOINT ${WORKDIR}/download_and_merge_video.sh
