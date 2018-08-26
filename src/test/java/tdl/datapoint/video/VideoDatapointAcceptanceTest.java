@@ -128,17 +128,13 @@ public class VideoDatapointAcceptanceTest {
         waitForQueueToReceiveEvents();
 
         // Then - Raw video uploaded events are computed for the deploy tags
-        assertThat("Raw video update events match: 1 event expected", rawVideoUpdatedEvents.size(), equalTo(1));
+        assertThat("Raw video update events match check: 1 event expected", rawVideoUpdatedEvents.size(), equalTo(1));
         System.out.println("Received video events: " + rawVideoUpdatedEvents);
         rawVideoUpdatedEvents.sort(Comparator.comparing(RawVideoUpdatedEvent::getChallengeId));
-        RawVideoUpdatedEvent rawVideoUploadedRound1 = rawVideoUpdatedEvents.get(0);
-        assertThat(rawVideoUploadedRound1.getParticipant(), equalTo(participantId));
-        assertThat(rawVideoUploadedRound1.getChallengeId(), equalTo(challengeId + "_R1"));
-        assertThat(rawVideoUploadedRound1.getVideoLink(), equalTo(33));
-        RawVideoUpdatedEvent rawVideoUploadedRound2 = rawVideoUpdatedEvents.get(1);
-        assertThat(rawVideoUploadedRound2.getParticipant(), equalTo(participantId));
-        assertThat(rawVideoUploadedRound2.getChallengeId(), equalTo(challengeId + "_R2"));
-        assertThat(rawVideoUploadedRound2.getVideoLink(), equalTo(44));
+        RawVideoUpdatedEvent rawVideoUploaded = rawVideoUpdatedEvents.get(0);
+        assertThat(rawVideoUploaded.getParticipant(), equalTo(participantId));
+        assertThat(rawVideoUploaded.getChallengeId(), equalTo(challengeId));
+        assertThat(rawVideoUploaded.getVideoLink(), equalTo("http://some-url.com/video.mp4"));
     }
 
     private String wrapAsSNSEvent(S3Event s3Event) throws JsonProcessingException {
