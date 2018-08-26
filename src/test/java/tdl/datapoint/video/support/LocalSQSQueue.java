@@ -24,7 +24,7 @@ public class LocalSQSQueue {
 
         client.purgeQueue(new PurgeQueueRequest(queueUrl));
         SqsEventQueue sqsEventQueue = new SqsEventQueue(client, queueUrl);
-        assertThat("Queue "+ queueUrl +" is not clean.", sqsEventQueue.getQueueSize(),
+        assertThat("Queue " + queueUrl + " is not clean.", sqsEventQueue.getQueueSize(),
                 CoreMatchers.is(new QueueSize(0, 0, 0)));
         return sqsEventQueue;
     }

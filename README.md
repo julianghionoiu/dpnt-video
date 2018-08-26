@@ -1,6 +1,6 @@
 # dpnt-video
 
-Merge videos uploaded by user
+Merge video uploaded by user into a final video
 
 ### Updating sub-modules
 
@@ -111,16 +111,16 @@ export AWS_PROFILE=befaster                      # pre-configured profile contai
 
 minio mb myminio
 minio mb myminio/tdl-test-auth/TCH/user01/
-minio cp ./build/resources/test/video1.mpg myminio/tdl-test-auth/TCH/user01/video1.mpg
+minio cp ./build/resources/test/screencast_20180727T144854.mp4 myminio/tdl-test-auth/TCH/user01/video.mp4
 ```
 
 Invoke function manually
 
 ```bash
-SLS_DEBUG=* serverless invoke local --function call-ecs-to-merge-videos --path src/test/resources/tdl/datapoint/merge-videos/sample_s3_via_sns_event.json
+SLS_DEBUG=* serverless invoke local --function call-ecs-to-merge-video --path src/test/resources/tdl/datapoint/video/sample_s3_via_sns_event.json
 ```
 
-Note: the `sample_s3_via_sns_event.json` file contains the reference to the bucket `tdl-test-auth` and the key referring to the file at `TCH/user01/video1.mpg`.
+Note: the `sample_s3_via_sns_event.json` file contains the reference to the bucket `tdl-test-auth` and the key referring to the file at `TCH/user01/video1.mp4`.
 
 ## Container deployment
 
@@ -178,10 +178,10 @@ Set the bucket and the key to some meaningful values.
 
 Invoke the dev lambda
 ```bash
-SLS_DEBUG=* serverless invoke --stage dev --function call-ecs-to-merge-videos --path src/test/resources/tdl/datapoint/video/sample_s3_via_sns_event.json
+SLS_DEBUG=* serverless invoke --stage dev --function call-ecs-to-merge-video --path src/test/resources/tdl/datapoint/video/sample_s3_via_sns_event.json
 ```
 
 Check the destination queue for that particular environment.
 Check the ECS Task status and logs
 
-Note: the `sample_s3_via_sns_event.json` file contains the reference to the bucket `tdl-test-auth` and the key referring to the file at `TCH/user01/video1.mpg`.
+Note: the `sample_s3_via_sns_event.json` file contains the reference to the bucket `tdl-test-auth` and the key referring to the file at `TCH/user01/video1.mp4`.

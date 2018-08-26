@@ -51,6 +51,6 @@ EOL
 cat ${INTEROP_QUEUE_CONFIG}
 DRY_RUN=false java -Dconfig.file="${INTEROP_QUEUE_CONFIG}" \
     -jar "${WORK_DIR}/queue-cli-tool-all.jar" \
-    send videosMerged \
+    send videoMerged \
     participant=${PARTICIPANT_ID} roundId=${ROUND_ID}
 # Output: Public URL published to SQS or printed on the console
