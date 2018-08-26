@@ -72,6 +72,6 @@ package:
   artifact: build/libs/dpnt-video-all.jar
 
 functions:
-  call-ecs-to-compute-video:
+  call-ecs-to-merge-video:
     handler: tdl.datapoint.video.VideoUploadHandler
     onError: arn:aws:sns:eu-west-2:577770582757:MyselfEU2

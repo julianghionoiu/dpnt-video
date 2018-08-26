@@ -111,13 +111,13 @@ export AWS_PROFILE=befaster                      # pre-configured profile contai
 
 minio mb myminio
 minio mb myminio/tdl-test-auth/TCH/user01/
-minio cp ./build/resources/test/video1.mp4 myminio/tdl-test-auth/TCH/user01/video1.mp4
+minio cp ./build/resources/test/screencast_20180727T144854.mp4 myminio/tdl-test-auth/TCH/user01/video.mp4
 ```
 
 Invoke function manually
 
 ```bash
-SLS_DEBUG=* serverless invoke local --function call-ecs-to-merge-video --path src/test/resources/tdl/datapoint/merge-video/sample_s3_via_sns_event.json
+SLS_DEBUG=* serverless invoke local --function call-ecs-to-merge-video --path src/test/resources/tdl/datapoint/video/sample_s3_via_sns_event.json
 ```
 
 Note: the `sample_s3_via_sns_event.json` file contains the reference to the bucket `tdl-test-auth` and the key referring to the file at `TCH/user01/video1.mp4`.
