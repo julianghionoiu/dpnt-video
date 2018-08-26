@@ -10,9 +10,9 @@ BASE="base"
 export DEBUG="${DEBUG:-}"
 
 function die() { echo >&2 $1; exit 1; }
-[ "$#" -eq 2 ] || die "Usage: $0 PARTICIPANT_ID ROUND_ID"
+[ "$#" -eq 2 ] || die "Usage: $0 PARTICIPANT_ID CHALLENGE_ID"
 PARTICIPANT_ID=$1
-ROUND_ID=$2
+CHALLENGE_ID=$2
 
 echo "Compute base image name+version"
 DEFAULT_IMAGE_PREFIX="accelerate-io/dpnt-video-"
@@ -39,5 +39,5 @@ docker run                                                                      
       --env SQS_REGION=unused                                                   \
       --env SQS_QUEUE_URL=unused                                                \
       --env PARTICIPANT_ID=${PARTICIPANT_ID}                                    \
-      --env ROUND_ID=${ROUND_ID}                                                \
+      --env CHALLENGE_ID=${CHALLENGE_ID}                                        \
       ${base_image_tag}
