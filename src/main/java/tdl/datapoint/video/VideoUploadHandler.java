@@ -8,7 +8,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -107,9 +106,7 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
         String participantId = event.getParticipantId();
         String challengeId = event.getChallengeId();
 
-        S3Object remoteVideoFile = s3Client.getObject(event.getBucket(), event.getKey());
-
         LOG.info("Triggering ECS to process video for tags");
-        ecsVideoTaskRunner.runVideoTask(event.getBucket(), event.getKey(), participantId, challengeId, remoteVideoFile);
+        ecsVideoTaskRunner.runVideoTask(event.getBucket(), event.getKey(), participantId, challengeId);
     }
 }

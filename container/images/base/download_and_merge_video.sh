@@ -32,10 +32,11 @@ echo  "~~~~~~ Download and merge video into accumulator ~~~~~~" > /dev/null
 
 echo  "~~~~~~ Publish results ~~~~~~" > /dev/null
 merged_video_status="n video merged"
+VIDEO_LINK="http://some-url.com/video.mp4"
 
 if [[ "${SQS_QUEUE_URL}" != http* ]]; then
     echo "SQS_QUEUE_URL does not seem to be valid. Will print to the console and exit" > /dev/null
-    echo "participant=${PARTICIPANT_ID} roundId=${ROUND_ID}"
+    echo "participant=${PARTICIPANT_ID} roundId=${ROUND_ID} videoLink=${VIDEO_LINK}"
     exit 0
 fi
 
@@ -51,6 +52,6 @@ EOL
 cat ${INTEROP_QUEUE_CONFIG}
 DRY_RUN=false java -Dconfig.file="${INTEROP_QUEUE_CONFIG}" \
     -jar "${WORK_DIR}/queue-cli-tool-all.jar" \
-    send videoMerged \
-    participant=${PARTICIPANT_ID} roundId=${ROUND_ID}
+    send rawVideoUpdated \
+    participant=${PARTICIPANT_ID} roundId=${ROUND_ID} videoLink="${VIDEO_LINK}"
 # Output: Public URL published to SQS or printed on the console
