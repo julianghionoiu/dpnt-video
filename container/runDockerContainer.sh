@@ -10,7 +10,7 @@ BASE="base"
 export DEBUG="${DEBUG:-}"
 
 function die() { echo >&2 $1; exit 1; }
-[ "$#" -eq 6 ] || die "Usage: $0 PARTICIPANT_ID ROUND_ID"
+[ "$#" -eq 2 ] || die "Usage: $0 PARTICIPANT_ID ROUND_ID"
 PARTICIPANT_ID=$1
 ROUND_ID=$2
 

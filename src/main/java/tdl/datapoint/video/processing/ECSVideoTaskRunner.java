@@ -7,7 +7,6 @@ import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.NetworkConfiguration;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.TaskOverride;
-import com.amazonaws.services.s3.model.S3Object;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -52,7 +51,7 @@ public class ECSVideoTaskRunner {
     }
 
     public void runVideoTask(String bucket, String key, String participantId,
-                             String challengeId, S3Object video) {
+                             String challengeId) {
         RunTaskRequest runTaskRequest = runTaskRequestSupplier.get();
         runTaskRequest.setTaskDefinition(this.taskDefinitionPrefix);
 
@@ -60,7 +59,6 @@ public class ECSVideoTaskRunner {
         env.put("PARTICIPANT_ID", participantId);
         env.put("REPO", "s3://" + bucket + "/" + key);
         env.put("CHALLENGE_ID", challengeId);
-        env.put("VIDEO", video.getKey());
         setTaskEnv(runTaskRequest, env);
 
         LOG.info("Issuing RunTask command: " + runTaskRequest);

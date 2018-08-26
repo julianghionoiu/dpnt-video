@@ -1,0 +1,70 @@
+{% import 'task-definition.macro.jinja2.json' as taskMacro with context %}
+{
+    "Description": "Deploys a FARGATE ECS cluster and configures the TaskDefinitions that are available\n",
+    "Resources": {
+        "ECSCluster": {
+            "Type": "AWS::ECS::Cluster",
+            "Properties": {
+                "ClusterName": "{{ CLUSTER_NAME }}"
+            }
+        },
+        "ClusterTaskExecutionLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+                "LogGroupName": "/aws/lambda/{{ CLUSTER_NAME }}"
+            }
+        },
+        "TaskRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Path": "/",
+                "RoleName": "{{ CLUSTER_NAME }}-taskRole",
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": "sts:AssumeRole",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "ecs-tasks.amazonaws.com"
+                            }
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "execution-role",
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:ListBucket",
+                                        "s3:ListBucketMultipartUploads"
+                                    ],
+                                    "Resource": "{{ S3_BUCKET_ARN }}"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:GetObject"
+                                    ],
+                                    "Resource": "{{ S3_BUCKET_ARN }}/*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "sqs:GetQueueAttributes",
+                                        "sqs:SendMessageBatch",
+                                        "sqs:SendMessage"
+                                    ],
+                                    "Resource": "{{ SQS_QUEUE_ARN }}"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "TaskDefinitionBase": {{ taskMacro.baseTask('base', '0.1') }},
+    }
+}
