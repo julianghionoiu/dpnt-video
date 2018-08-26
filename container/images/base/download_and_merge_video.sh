@@ -25,7 +25,7 @@ ensure_env "SQS_REGION"
 ensure_env "SQS_QUEUE_URL"
 
 ensure_env "PARTICIPANT_ID"
-ensure_env "ROUND_ID"
+ensure_env "CHALLENGE_ID"
 
 echo  "~~~~~~ Download and merge video into accumulator ~~~~~~" > /dev/null
 ### --- do merge video and upload stuff here
@@ -36,7 +36,7 @@ VIDEO_LINK="http://some-url.com/video.mp4"
 
 if [[ "${SQS_QUEUE_URL}" != http* ]]; then
     echo "SQS_QUEUE_URL does not seem to be valid. Will print to the console and exit" > /dev/null
-    echo "participant=${PARTICIPANT_ID} roundId=${ROUND_ID} videoLink=${VIDEO_LINK}"
+    echo "participant=${PARTICIPANT_ID} challengeId=${CHALLENGE_ID} videoLink=${VIDEO_LINK}"
     exit 0
 fi
 
@@ -53,5 +53,5 @@ cat ${INTEROP_QUEUE_CONFIG}
 DRY_RUN=false java -Dconfig.file="${INTEROP_QUEUE_CONFIG}" \
     -jar "${WORK_DIR}/queue-cli-tool-all.jar" \
     send rawVideoUpdated \
-    participant=${PARTICIPANT_ID} roundId=${ROUND_ID} videoLink="${VIDEO_LINK}"
+    participant=${PARTICIPANT_ID} challengeId=${CHALLENGE_ID} videoLink="${VIDEO_LINK}"
 # Output: Public URL published to SQS or printed on the console
