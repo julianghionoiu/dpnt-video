@@ -18,6 +18,20 @@ git submodule update --init
 
 ## Acceptance test
 
+Install `ffmpeg`
+
+### Linux
+
+```bash
+sudo apt-get install ffmpeg
+```
+
+### MacOS
+
+```bash
+brew install ffmpeg
+```
+
 Start the local S3 and SQS simulators
 ```bash
 python local-sqs/elasticmq-wrapper.py start

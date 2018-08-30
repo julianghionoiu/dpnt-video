@@ -57,7 +57,7 @@ public class ECSVideoTaskRunner {
 
         HashMap<String, String> env = new HashMap<>();
         env.put("PARTICIPANT_ID", participantId);
-        env.put("REPO", "s3://" + bucket + "/" + key);
+        env.put("VIDEO_LINK", "s3://" + bucket + "/" + key);
         env.put("CHALLENGE_ID", challengeId);
         setTaskEnv(runTaskRequest, env);
 

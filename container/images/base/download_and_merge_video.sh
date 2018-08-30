@@ -17,6 +17,9 @@ function ensure_env {
 
 WORK_DIR=${SCRIPT_CURRENT_DIR}
 
+ensure_env "AWS_ACCESS_KEY_ID"
+ensure_env "AWS_SECRET_ACCESS_KEY"
+
 ensure_env "S3_ENDPOINT"
 ensure_env "S3_REGION"
 
@@ -28,11 +31,26 @@ ensure_env "PARTICIPANT_ID"
 ensure_env "CHALLENGE_ID"
 
 echo  "~~~~~~ Download and merge video into accumulator ~~~~~~" > /dev/null
-### --- do merge video and upload stuff here
+TARGET_VIDEO_NAME="real-recording.mp4"
+BUCKET_NAME="tdl-official-videos"
+S3_BUCKET_URL="s3://${BUCKET_NAME}/${CHALLENGE_ID}/${PARTICIPANT_ID}"
+VIDEOS_LIST="mylist.txt"
+echo  "Downloading all screencasts from the s3 bucket '${BUCKET_NAME}'"
+aws s3 cp "${S3_BUCKET_URL}" . --recursive --exclude "*" --include "screencast_*" --endpoint ${S3_ENDPOINT}
+rm ${VIDEOS_LIST} || true
+ls screencast_* -1 | xargs -n1 -I {} echo "file '{}'" >> mylist.txt
+
+echo  "Merging all downloaded screencasts into '${TARGET_VIDEO_NAME}'"
+cat ${VIDEOS_LIST}
+rm ${TARGET_VIDEO_NAME} || true
+ffmpeg -f concat -safe 0 -i ${VIDEOS_LIST} -c copy ${TARGET_VIDEO_NAME}
+
+echo  "Uploading the '${TARGET_VIDEO_NAME}' video into the s3 bucket '${BUCKET_NAME}'"
+aws s3 cp ${TARGET_VIDEO_NAME} "${S3_BUCKET_URL}/${TARGET_VIDEO_NAME}" --endpoint ${S3_ENDPOINT}
 
 echo  "~~~~~~ Publish results ~~~~~~" > /dev/null
-merged_video_status="n video merged"
-VIDEO_LINK="http://some-url.com/video.mp4"
+merged_video_status="$(cat ${VIDEOS_LIST} | wc -l) video(s) merged into ${TARGET_VIDEO_NAME}"
+VIDEO_LINK="${S3_BUCKET_URL}/${TARGET_VIDEO_NAME}"
 
 if [[ "${SQS_QUEUE_URL}" != http* ]]; then
     echo "SQS_QUEUE_URL does not seem to be valid. Will print to the console and exit" > /dev/null
