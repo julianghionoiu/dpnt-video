@@ -50,15 +50,16 @@ public class ECSVideoTaskRunner {
         };
     }
 
-    public void runVideoTask(String bucket, String key, String participantId,
-                             String challengeId) {
+    public void runVideoTask(String participantId, String challengeId,
+                             String s3UrlNewVideo, String s3UrlAccumulatorVideo) {
         RunTaskRequest runTaskRequest = runTaskRequestSupplier.get();
         runTaskRequest.setTaskDefinition(this.taskDefinitionPrefix);
 
         HashMap<String, String> env = new HashMap<>();
         env.put("PARTICIPANT_ID", participantId);
-        env.put("VIDEO_LINK", "s3://" + bucket + "/" + key);
         env.put("CHALLENGE_ID", challengeId);
+        env.put("S3_URL_NEW_VIDEO", s3UrlNewVideo);
+        env.put("S3_URL_ACCUMULATOR_VIDEO", s3UrlAccumulatorVideo);
         setTaskEnv(runTaskRequest, env);
 
         LOG.info("Issuing RunTask command: " + runTaskRequest);

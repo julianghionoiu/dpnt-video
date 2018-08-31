@@ -29,28 +29,38 @@ ensure_env "SQS_QUEUE_URL"
 
 ensure_env "PARTICIPANT_ID"
 ensure_env "CHALLENGE_ID"
+ensure_env "S3_URL_NEW_VIDEO"
+ensure_env "S3_URL_ACCUMULATOR_VIDEO"
 
 echo  "~~~~~~ Download and merge video into accumulator ~~~~~~" > /dev/null
 TARGET_VIDEO_NAME="real-recording.mp4"
-BUCKET_NAME="tdl-official-videos"
-S3_BUCKET_URL="s3://${BUCKET_NAME}/${CHALLENGE_ID}/${PARTICIPANT_ID}"
 VIDEOS_LIST="mylist.txt"
-echo  "Downloading all screencasts from the s3 bucket '${BUCKET_NAME}'"
-aws s3 cp "${S3_BUCKET_URL}" . --recursive --exclude "*" --include "screencast_*" --endpoint ${S3_ENDPOINT}
+echo  "Downloading new screencast and the accumulator videos from the s3 bucket"
+NEW_VIDEO=$(echo ${S3_URL_NEW_VIDEO##*/})
+aws s3 cp "${S3_URL_NEW_VIDEO}" . --endpoint ${S3_ENDPOINT}
+aws s3 ls ${S3_URL_ACCUMULATOR_VIDEO} --endpoint ${S3_ENDPOINT} && \
+          aws s3 cp "${S3_URL_ACCUMULATOR_VIDEO}" . --endpoint ${S3_ENDPOINT} || true
+
 rm ${VIDEOS_LIST} || true
-ls screencast_* -1 | xargs -n1 -I {} echo "file '{}'" >> mylist.txt
+if [[ -e "${TARGET_VIDEO_NAME}" ]]; then
+   echo "file '${TARGET_VIDEO_NAME}'" > ${VIDEOS_LIST}
+   ls screencast_* -1 | xargs -n1 -I {} echo "file '{}'" >> ${VIDEOS_LIST}
 
-echo  "Merging all downloaded screencasts into '${TARGET_VIDEO_NAME}'"
-cat ${VIDEOS_LIST}
-rm ${TARGET_VIDEO_NAME} || true
-ffmpeg -f concat -safe 0 -i ${VIDEOS_LIST} -c copy ${TARGET_VIDEO_NAME}
+   echo  "Merging '${S3_URL_NEW_VIDEO}' into '${S3_URL_ACCUMULATOR_VIDEO}'"
+   cat ${VIDEOS_LIST}
+   ffmpeg -f concat -safe 0 -i ${VIDEOS_LIST} -c copy ${S3_URL_ACCUMULATOR_VIDEO}
+else
+   cp ${NEW_VIDEO} ${TARGET_VIDEO_NAME}
+fi
 
-echo  "Uploading the '${TARGET_VIDEO_NAME}' video into the s3 bucket '${BUCKET_NAME}'"
-aws s3 cp ${TARGET_VIDEO_NAME} "${S3_BUCKET_URL}/${TARGET_VIDEO_NAME}" --endpoint ${S3_ENDPOINT}
+echo  "Uploading the the merged video to '${S3_URL_ACCUMULATOR_VIDEO}'"
+MERGED_ACCUMULATOR_VIDEO=$(ls ${TARGET_VIDEO_NAME} -1)
+aws s3 cp ${MERGED_ACCUMULATOR_VIDEO} "${S3_URL_ACCUMULATOR_VIDEO}" --endpoint ${S3_ENDPOINT}
 
 echo  "~~~~~~ Publish results ~~~~~~" > /dev/null
-merged_video_status="$(cat ${VIDEOS_LIST} | wc -l) video(s) merged into ${TARGET_VIDEO_NAME}"
-VIDEO_LINK="${S3_BUCKET_URL}/${TARGET_VIDEO_NAME}"
+merged_video_status="$(cat ${VIDEOS_LIST} | wc -l) video(s) merged into ${MERGED_ACCUMULATOR_VIDEO}"
+##TODO check minio to see if we can get a http url & aws s3 - see docs
+VIDEO_LINK="${S3_URL_ACCUMULATOR_VIDEO}"
 
 if [[ "${SQS_QUEUE_URL}" != http* ]]; then
     echo "SQS_QUEUE_URL does not seem to be valid. Will print to the console and exit" > /dev/null
