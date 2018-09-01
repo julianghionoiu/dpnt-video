@@ -2,7 +2,7 @@
   "Records": [
     {
       "Sns": {
-        "Message": "{\"Records\":[{\"s3\":{\"bucket\":{\"name\":\"tdl-test-auth\"},\"object\":{\"key\":\"TCH/user01/video.mp4\"}}}]}"
+        "Message": "{\"Records\":[{\"s3\":{\"bucket\":{\"name\":\"tdl-test-auth-split\"},\"object\":{\"key\":\"TCH/user01/video.mp4\"}}}]}"
       }
     }
   ]

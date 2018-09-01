@@ -22,7 +22,8 @@ provider:
     - "s3:ListBucket"
     - "s3:ListBucketMultipartUploads"
     Resource:
-    - ${self:provider.environment.S3_BUCKET_ARN}
+    - ${self:provider.environment.S3_SPLIT_VIDEOS_BUCKET_ARN}
+    - ${self:provider.environment.S3_ACCUMULATED_VIDEOS_BUCKET_ARN}
 
   # Read Videos bucket
   - Effect: "Allow"
@@ -31,7 +32,8 @@ provider:
     Resource:
       Fn::Join:
       - ""
-      - - ${self:provider.environment.S3_BUCKET_ARN}
+      - - ${self:provider.environment.S3_SPLIT_VIDEOS_BUCKET_ARN}
+        - ${self:provider.environment.S3_ACCUMULATED_VIDEOS_BUCKET_ARN}
         - "/*"
 
   # Publish events
