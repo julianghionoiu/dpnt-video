@@ -48,14 +48,15 @@ if [[ -e "${TARGET_VIDEO_NAME}" ]]; then
 
    echo  "Merging '${S3_URL_NEW_VIDEO}' into '${S3_URL_ACCUMULATOR_VIDEO}'"
    cat ${VIDEOS_LIST}
-   ffmpeg -f concat -safe 0 -i ${VIDEOS_LIST} -c copy ${S3_URL_ACCUMULATOR_VIDEO}
+   ffmpeg -f concat -safe 0 -i ${VIDEOS_LIST} -c copy "new_${TARGET_VIDEO_NAME}"
+   rm ${TARGET_VIDEO_NAME}
+   mv "new_${TARGET_VIDEO_NAME}" ${TARGET_VIDEO_NAME}
 else
    cp ${NEW_VIDEO} ${TARGET_VIDEO_NAME}
 fi
 
 echo  "Uploading the the merged video to '${S3_URL_ACCUMULATOR_VIDEO}'"
-MERGED_ACCUMULATOR_VIDEO=$(ls ${TARGET_VIDEO_NAME} -1)
-aws s3 cp ${MERGED_ACCUMULATOR_VIDEO} "${S3_URL_ACCUMULATOR_VIDEO}" --endpoint ${S3_ENDPOINT}
+aws s3 cp ${TARGET_VIDEO_NAME} "${S3_URL_ACCUMULATOR_VIDEO}" --endpoint ${S3_ENDPOINT}
 
 echo  "~~~~~~ Publish results ~~~~~~" > /dev/null
 ##TODO check minio to see if we can get a http url & aws s3 - see docs
