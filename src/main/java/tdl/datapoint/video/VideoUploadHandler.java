@@ -117,7 +117,7 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
 
         LOG.info("Triggering ECS to process video for tags");
         ecsVideoTaskRunner.runVideoTask(
-                challengeId, participantId, s3UrlNewVideo, s3UrlAccumulatorVideo
+                participantId, challengeId, s3UrlNewVideo, s3UrlAccumulatorVideo
         );
     }
 }

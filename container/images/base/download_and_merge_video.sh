@@ -58,7 +58,6 @@ MERGED_ACCUMULATOR_VIDEO=$(ls ${TARGET_VIDEO_NAME} -1)
 aws s3 cp ${MERGED_ACCUMULATOR_VIDEO} "${S3_URL_ACCUMULATOR_VIDEO}" --endpoint ${S3_ENDPOINT}
 
 echo  "~~~~~~ Publish results ~~~~~~" > /dev/null
-merged_video_status="$(cat ${VIDEOS_LIST} | wc -l) video(s) merged into ${MERGED_ACCUMULATOR_VIDEO}"
 ##TODO check minio to see if we can get a http url & aws s3 - see docs
 VIDEO_LINK="${S3_URL_ACCUMULATOR_VIDEO}"
 

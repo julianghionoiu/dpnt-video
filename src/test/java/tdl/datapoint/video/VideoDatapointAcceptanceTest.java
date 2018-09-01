@@ -41,7 +41,7 @@ public class VideoDatapointAcceptanceTest {
     private static final Context NO_CONTEXT = null;
     private static final int WAIT_BEFORE_RETRY_IN_MILLIS = 2000;
     private static final int TASK_FINISH_CHECK_RETRY_COUNT = 10;
-    private static final int ACCUMULATED_VIDEO_EVENT = 1;
+    private static final int FIRST_ACCUMULATED_VIDEO_EVENT = 0;
 
     @Rule
     public EnvironmentVariables environmentVariables = new EnvironmentVariables();
@@ -119,13 +119,13 @@ public class VideoDatapointAcceptanceTest {
         // Given - The participant produces Video files while solving a challenge
         String challengeId = "TCH";
         String participantId = generateId();
-        String s3destination1 = String.format("%s/%s/screencast_1.mp4", challengeId, participantId);
+        String s3destination = String.format("%s/%s/screencast_1.mp4", challengeId, participantId);
         TestVideoFile videoForTestChallenge1 = new TestVideoFile("screencast_20180727T144854.mp4");
 
         // When - Upload event happens
-        S3Event s3Event1 = localS3Bucket.putObject(videoForTestChallenge1.asFile(), s3destination1);
+        S3Event s3Event = localS3Bucket.putObject(videoForTestChallenge1.asFile(), s3destination);
         videoUploadHandler.handleRequest(
-                convertToMap(wrapAsSNSEvent(s3Event1)),
+                convertToMap(wrapAsSNSEvent(s3Event)),
                 NO_CONTEXT);
         
         waitForQueueToReceiveEvents();
@@ -134,16 +134,16 @@ public class VideoDatapointAcceptanceTest {
         assertThat("Raw video update events match check: 1 events expected", rawVideoUpdatedEvents.size(), equalTo(1));
         System.out.println("Received video events: " + rawVideoUpdatedEvents);
         rawVideoUpdatedEvents.sort(Comparator.comparing(RawVideoUpdatedEvent::getChallengeId));
-        RawVideoUpdatedEvent rawVideoUploaded = rawVideoUpdatedEvents.get(ACCUMULATED_VIDEO_EVENT);
+        RawVideoUpdatedEvent rawVideoUploaded = rawVideoUpdatedEvents.get(FIRST_ACCUMULATED_VIDEO_EVENT);
         assertThat("participantId matching", rawVideoUploaded.getParticipant(), equalTo(participantId));
         assertThat("challengeId matching", rawVideoUploaded.getChallengeId(), equalTo(challengeId));
-        String key = String.format("%s/%s/real-recording-first-video.mp4", challengeId, participantId);
+        String key = String.format("%s/%s/real-recording.mp4", challengeId, participantId);
         //TODO check minio to see if we can get a http url & aws s3 - see docs
-        assertThat("Video link match check: expecting something like s3://tdl-official-videos/.../real-recording-first-video.mp4", rawVideoUploaded.getVideoLink(), equalTo(
+        assertThat("Video link match check: expecting something like s3://tdl-official-videos/.../real-recording.mp4", rawVideoUploaded.getVideoLink(), equalTo(
                 String.format("s3://tdl-official-videos/%s", key))
         );
 
-        Path expectedAccumulatorVideo = new TestVideoFile("real-recording-first-video.mp4").asFile().toPath();
+        Path expectedAccumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/real-recording.mp4").asFile().toPath();
         //TODO use Http instead of s3
         Path actualAccumulatorVideo = new TestVideoFile(localS3Bucket, key).getS3Object("real-recording", ".mp4").toPath();
         //TODO compare videos using dev-screen-record's logic: see acceptance test that generates and reads QRcode
@@ -151,8 +151,6 @@ public class VideoDatapointAcceptanceTest {
     }
 
     private void assertThatFilesAreEqual(String reason, Path firstFile, Path secondFile) throws IOException {
-        System.out.println(firstFile);
-        System.out.println(secondFile);
         byte[] firstFileAsBytes = Files.readAllBytes(firstFile);
         byte[] secondFileAsBytes = Files.readAllBytes(secondFile);
 
