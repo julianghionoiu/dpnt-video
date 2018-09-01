@@ -108,12 +108,13 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
         String challengeId = event.getChallengeId();
 
         final String ACCUMULATOR_VIDEO_NAME = "real-recording.mp4";
-        final String BUCKET_NAME = "tdl-official-videos";
+        final String SPLIT_VIDEOS_BUCKET_NAME = "tdl-official-split-videos";
+        final String ACCUMULATED_VIDEOS_BUCKET_NAME = "tdl-official-videos";
 
-        final String s3UrlNewVideo = String.format("s3://%s/%s", BUCKET_NAME, event.getKey());
+        final String s3UrlNewVideo = String.format("s3://%s/%s", SPLIT_VIDEOS_BUCKET_NAME, event.getKey());
 
         final String s3BucketKey = String.format("%s/%s/%s", challengeId, participantId, ACCUMULATOR_VIDEO_NAME);
-        final String s3UrlAccumulatorVideo = String.format("s3://%s/%s", BUCKET_NAME, s3BucketKey);
+        final String s3UrlAccumulatorVideo = String.format("s3://%s/%s", ACCUMULATED_VIDEOS_BUCKET_NAME, s3BucketKey);
 
         LOG.info("Triggering ECS to process video for tags");
         ecsVideoTaskRunner.runVideoTask(

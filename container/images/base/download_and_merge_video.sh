@@ -42,16 +42,17 @@ aws s3 ls ${S3_URL_ACCUMULATOR_VIDEO} --endpoint ${S3_ENDPOINT} && \
           aws s3 cp "${S3_URL_ACCUMULATOR_VIDEO}" . --endpoint ${S3_ENDPOINT} || true
 
 rm ${VIDEOS_LIST} || true
-if [[ -e "${TARGET_VIDEO_NAME}" ]]; then
+if [[ -s "${TARGET_VIDEO_NAME}" ]]; then
    echo "file '${TARGET_VIDEO_NAME}'" > ${VIDEOS_LIST}
    ls screencast_* -1 | xargs -n1 -I {} echo "file '{}'" >> ${VIDEOS_LIST}
 
-   echo  "Merging '${S3_URL_NEW_VIDEO}' into '${S3_URL_ACCUMULATOR_VIDEO}'"
+   echo  "Concatenating '${NEW_VIDEO}' at the bottom of '${TARGET_VIDEO_NAME}'"
    cat ${VIDEOS_LIST}
    ffmpeg -f concat -safe 0 -i ${VIDEOS_LIST} -c copy "new_${TARGET_VIDEO_NAME}"
    rm ${TARGET_VIDEO_NAME}
    mv "new_${TARGET_VIDEO_NAME}" ${TARGET_VIDEO_NAME}
 else
+   echo  "Copying '${NEW_VIDEO}' into '${TARGET_VIDEO_NAME}' as accumulator video does not pre-exist"
    cp ${NEW_VIDEO} ${TARGET_VIDEO_NAME}
 fi
 

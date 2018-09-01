@@ -10,12 +10,14 @@ import java.io.File;
 
 public class LocalS3Bucket {
     private final AmazonS3 s3Client;
+    private String bucket;
 
-    private LocalS3Bucket(AmazonS3 s3Client) {
+    private LocalS3Bucket(AmazonS3 s3Client, String bucket) {
         this.s3Client = s3Client;
+        this.bucket = bucket;
     }
 
-    public static LocalS3Bucket createInstance(String endpoint, String region) {
+    public static LocalS3Bucket createInstance(String endpoint, String region, String bucket) {
         AwsClientBuilder.EndpointConfiguration endpointConfiguration =
                 new AwsClientBuilder.EndpointConfiguration(endpoint, region);
         AmazonS3 s3Client = AmazonS3ClientBuilder
@@ -24,18 +26,16 @@ public class LocalS3Bucket {
                 .withCredentials(new DefaultAWSCredentialsProviderChain())
                 .withEndpointConfiguration(endpointConfiguration)
                 .build();
-        return new LocalS3Bucket(s3Client);
+        return new LocalS3Bucket(s3Client, bucket);
     }
 
     public S3Event putObject(File object, String key) {
-        String bucket = "tdl-official-videos";
         createBucketIfNotExists(s3Client, bucket);
         s3Client.putObject(bucket, key, object);
         return new S3Event(bucket, key);
     }
 
     public S3Object getObject(String key) {
-        String bucket = "tdl-official-videos";
         return s3Client.getObject(bucket, key);
     }
 

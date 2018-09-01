@@ -51,7 +51,8 @@ public class VideoDatapointAcceptanceTest {
 
     private VideoUploadHandler videoUploadHandler;
     private SqsEventQueue sqsEventQueue;
-    private LocalS3Bucket localS3Bucket;
+    private LocalS3Bucket localS3AccumulatedVideoBucket;
+    private LocalS3Bucket localS3SplitVideosBucket;
     private List<RawVideoUpdatedEvent> rawVideoUpdatedEvents;
     private ObjectMapper mapper;
 
@@ -88,9 +89,15 @@ public class VideoDatapointAcceptanceTest {
         environmentVariables.set("AWS_SECRET_ACCESS_KEY", "local_test_secret_key");
         setEnvFrom(environmentVariables, Paths.get("config", "local.params.yml"));
 
-        localS3Bucket = LocalS3Bucket.createInstance(
+        localS3SplitVideosBucket = LocalS3Bucket.createInstance(
                 getEnv(ApplicationEnv.S3_ENDPOINT),
-                getEnv(ApplicationEnv.S3_REGION));
+                getEnv(ApplicationEnv.S3_REGION),
+                "tdl-official-split-videos");
+
+        localS3AccumulatedVideoBucket = LocalS3Bucket.createInstance(
+                getEnv(ApplicationEnv.S3_ENDPOINT),
+                getEnv(ApplicationEnv.S3_REGION),
+                "tdl-official-videos");
 
         sqsEventQueue = LocalSQSQueue.createInstance(
                 getEnv(ApplicationEnv.SQS_ENDPOINT),
@@ -119,15 +126,18 @@ public class VideoDatapointAcceptanceTest {
         // Given - The participant produces Video files while solving a challenge
         String challengeId = "TCH";
         String participantId = generateId();
+        String s3AccumulatorVideoDestination = String.format("%s/%s/real-recording.mp4", challengeId, participantId);
+        TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/before/real-recording.mp4");
         String s3destination = String.format("%s/%s/screencast_1.mp4", challengeId, participantId);
         TestVideoFile videoForTestChallenge = new TestVideoFile("screencast_20180727T144854.mp4");
 
         // When - Upload event happens
-        S3Event s3Event = localS3Bucket.putObject(videoForTestChallenge.asFile(), s3destination);
+        localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
+        S3Event s3Event = localS3SplitVideosBucket.putObject(videoForTestChallenge.asFile(), s3destination);
         videoUploadHandler.handleRequest(
                 convertToMap(wrapAsSNSEvent(s3Event)),
                 NO_CONTEXT);
-        
+
         waitForQueueToReceiveEvents();
 
         // Then - Raw video uploaded events are computed for the deploy tags
@@ -143,9 +153,9 @@ public class VideoDatapointAcceptanceTest {
                 String.format("s3://tdl-official-videos/%s", key))
         );
 
-        Path expectedAccumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/real-recording.mp4").asFile().toPath();
+        Path expectedAccumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/after/real-recording.mp4").asFile().toPath();
         //TODO use Http instead of s3
-        Path actualAccumulatorVideo = new TestVideoFile(localS3Bucket, key).getS3Object("real-recording", ".mp4").toPath();
+        Path actualAccumulatorVideo = new TestVideoFile(localS3AccumulatedVideoBucket, key).getS3Object("real-recording", ".mp4").toPath();
         //TODO compare videos using dev-screen-record's logic: see acceptance test that generates and reads QRcode
         assertThatFilesAreEqual("Expect the files to match in content", actualAccumulatorVideo, expectedAccumulatorVideo);
     }
@@ -161,8 +171,8 @@ public class VideoDatapointAcceptanceTest {
         TestVideoFile s3SecondVideo = new TestVideoFile("screencast_20180727T225445.mp4");
 
         // When - Upload event happens
-        localS3Bucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
-        S3Event s3Event = localS3Bucket.putObject(s3SecondVideo.asFile(), s3SecondVideoDestination);
+        localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
+        S3Event s3Event = localS3SplitVideosBucket.putObject(s3SecondVideo.asFile(), s3SecondVideoDestination);
         videoUploadHandler.handleRequest(
                 convertToMap(wrapAsSNSEvent(s3Event)),
                 NO_CONTEXT);
@@ -184,7 +194,7 @@ public class VideoDatapointAcceptanceTest {
 
         Path expectedAccumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/after/real-recording.mp4").asFile().toPath();
         //TODO use Http instead of s3
-        Path actualAccumulatorVideo = new TestVideoFile(localS3Bucket, key).getS3Object("real-recording", ".mp4").toPath();
+        Path actualAccumulatorVideo = new TestVideoFile(localS3AccumulatedVideoBucket, key).getS3Object("real-recording", ".mp4").toPath();
         //TODO compare videos using dev-screen-record's logic: see acceptance test that generates and reads QRcode
         assertThatFilesAreEqual("Expect the files to match in content", actualAccumulatorVideo, expectedAccumulatorVideo);
     }
