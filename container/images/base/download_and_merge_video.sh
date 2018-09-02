@@ -61,11 +61,11 @@ aws s3 cp ${TARGET_VIDEO_NAME} "${S3_URL_ACCUMULATOR_VIDEO}" --endpoint ${S3_END
 
 echo  "~~~~~~ Publish results ~~~~~~" > /dev/null
 ##TODO check minio to see if we can get a http url & aws s3 - see docs
-VIDEO_LINK="${S3_URL_ACCUMULATOR_VIDEO}"
+VIDEO_LINK="$(aws s3 presign ${S3_URL_ACCUMULATOR_VIDEO} --expires-in 0 --endpoint ${S3_ENDPOINT})"
 
 if [[ "${SQS_QUEUE_URL}" != http* ]]; then
     echo "SQS_QUEUE_URL does not seem to be valid. Will print to the console and exit" > /dev/null
-    echo "participant=${PARTICIPANT_ID} challengeId=${CHALLENGE_ID} videoLink=${VIDEO_LINK}"
+    echo "participant=${PARTICIPANT_ID} challengeId=${CHALLENGE_ID} videoLink=\"${VIDEO_LINK}\""
     exit 0
 fi
 

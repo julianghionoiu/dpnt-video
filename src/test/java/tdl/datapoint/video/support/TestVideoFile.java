@@ -2,7 +2,7 @@ package tdl.datapoint.video.support;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,10 +31,15 @@ public class TestVideoFile {
         return resourcePath.toFile();
     }
     
-    public File getS3Object(String prefix, String suffix) throws IOException {
-        InputStream s3ObjectInputStream = s3Bucket.getObject(s3Key).getObjectContent();
-        File tmpFile = File.createTempFile(prefix, suffix);
-        Files.copy(s3ObjectInputStream, tmpFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        return tmpFile;
+    public Path downloadFile() throws IOException {
+        String sourceURL = name;
+        Path targetDirectory = Files.createTempDirectory("tmp");
+
+        URL url = new URL(sourceURL);
+        String fileName = sourceURL.substring(sourceURL.lastIndexOf('/') + 1);
+        Path targetPath = new File(targetDirectory + File.separator + fileName).toPath();
+        Files.copy(url.openStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+        return targetPath;
     }
 }

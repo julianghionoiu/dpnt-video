@@ -148,14 +148,9 @@ public class VideoDatapointAcceptanceTest {
         assertThat("participantId matching", rawVideoUploaded.getParticipant(), equalTo(participantId));
         assertThat("challengeId matching", rawVideoUploaded.getChallengeId(), equalTo(challengeId));
         String key = String.format("%s/%s/real-recording.mp4", challengeId, participantId);
-        //TODO check minio to see if we can get a http url & aws s3 - see docs
-        assertThat("Video link match check: expecting something like s3://tdl-official-videos/.../real-recording.mp4", rawVideoUploaded.getVideoLink(), equalTo(
-                String.format("s3://tdl-official-videos/%s", key))
-        );
-
         Path expectedAccumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/after/real-recording.mp4").asFile().toPath();
         //TODO use Http instead of s3
-        Path actualAccumulatorVideo = new TestVideoFile(localS3AccumulatedVideoBucket, key).getS3Object("real-recording", ".mp4").toPath();
+        Path actualAccumulatorVideo = new TestVideoFile(rawVideoUploaded.getVideoLink()).downloadFile();
         //TODO compare videos using dev-screen-record's logic: see acceptance test that generates and reads QRcode
         assertThatFilesAreEqual("Expect the files to match in content", actualAccumulatorVideo, expectedAccumulatorVideo);
     }
@@ -187,14 +182,9 @@ public class VideoDatapointAcceptanceTest {
         assertThat("participantId matching", rawVideoUploaded.getParticipant(), equalTo(participantId));
         assertThat("challengeId matching", rawVideoUploaded.getChallengeId(), equalTo(challengeId));
         String key = String.format("%s/%s/real-recording.mp4", challengeId, participantId);
-        //TODO check minio to see if we can get a http url & aws s3 - see docs
-        assertThat("Video link match check: expecting something like s3://tdl-official-videos/.../real-recording.mp4", rawVideoUploaded.getVideoLink(), equalTo(
-                String.format("s3://tdl-official-videos/%s", key))
-        );
-
         Path expectedAccumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/after/real-recording.mp4").asFile().toPath();
         //TODO use Http instead of s3
-        Path actualAccumulatorVideo = new TestVideoFile(localS3AccumulatedVideoBucket, key).getS3Object("real-recording", ".mp4").toPath();
+        Path actualAccumulatorVideo = new TestVideoFile(rawVideoUploaded.getVideoLink()).downloadFile();
         //TODO compare videos using dev-screen-record's logic: see acceptance test that generates and reads QRcode
         assertThatFilesAreEqual("Expect the files to match in content", actualAccumulatorVideo, expectedAccumulatorVideo);
     }
