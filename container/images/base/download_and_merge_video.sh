@@ -44,7 +44,7 @@ aws s3 ls ${S3_URL_ACCUMULATOR_VIDEO} --endpoint ${S3_ENDPOINT} && \
 rm ${VIDEOS_LIST} || true
 if [[ -s "${TARGET_VIDEO_NAME}" ]]; then
    echo "file '${TARGET_VIDEO_NAME}'" > ${VIDEOS_LIST}
-   ls screencast_* -1 | xargs -n1 -I {} echo "file '{}'" >> ${VIDEOS_LIST}
+   echo "file '${NEW_VIDEO}'" >> ${VIDEOS_LIST}
 
    echo  "Concatenating '${NEW_VIDEO}' at the bottom of '${TARGET_VIDEO_NAME}'"
    cat ${VIDEOS_LIST}
