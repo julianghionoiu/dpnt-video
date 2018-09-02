@@ -122,7 +122,7 @@ public class VideoDatapointAcceptanceTest {
     //~~~~~~~~~~ Helpers ~~~~~~~~~~~~~`
 
     @Test
-    public void upload_first_video() throws Exception {
+    public void upload_first_video_when_accumulator_does_not_exist_yet() throws Exception {
         // Given - The participant produces Video files while solving a challenge
         String challengeId = "TCH";
         String participantId = generateId();
@@ -161,7 +161,7 @@ public class VideoDatapointAcceptanceTest {
     }
 
     @Test
-    public void upload_second_video() throws Exception {
+    public void upload_when_accumulator_video_exists() throws Exception {
         // Given - The participant produces Video files while solving a challenge
         String challengeId = "TCH";
         String participantId = generateId();
