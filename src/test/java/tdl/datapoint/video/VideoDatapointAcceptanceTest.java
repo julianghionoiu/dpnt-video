@@ -128,11 +128,11 @@ public class VideoDatapointAcceptanceTest {
         String participantId = generateId();
         String s3AccumulatorVideoDestination = String.format("%s/%s/real-recording.mp4", challengeId, participantId);
         TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/before/real-recording.mp4");
+        localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         String s3destination = String.format("%s/%s/screencast_1.mp4", challengeId, participantId);
         TestVideoFile videoForTestChallenge = new TestVideoFile("screencast_20180727T144854.mp4");
 
         // When - Upload event happens
-        localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         S3Event s3Event = localS3SplitVideosBucket.putObject(videoForTestChallenge.asFile(), s3destination);
         videoUploadHandler.handleRequest(
                 convertToMap(wrapAsSNSEvent(s3Event)),
@@ -167,11 +167,11 @@ public class VideoDatapointAcceptanceTest {
         String participantId = generateId();
         String s3AccumulatorVideoDestination = String.format("%s/%s/real-recording.mp4", challengeId, participantId);
         TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/before/real-recording.mp4");
+        localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         String s3SecondVideoDestination = String.format("%s/%s/screencast_2.mp4", challengeId, participantId);
         TestVideoFile s3SecondVideo = new TestVideoFile("screencast_20180727T225445.mp4");
 
         // When - Upload event happens
-        localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         S3Event s3Event = localS3SplitVideosBucket.putObject(s3SecondVideo.asFile(), s3SecondVideoDestination);
         videoUploadHandler.handleRequest(
                 convertToMap(wrapAsSNSEvent(s3Event)),
