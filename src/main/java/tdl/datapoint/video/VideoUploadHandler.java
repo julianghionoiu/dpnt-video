@@ -14,6 +14,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import tdl.datapoint.video.processing.ECSVideoTaskRunner;
 import tdl.datapoint.video.processing.S3BucketEvent;
 
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,14 +40,17 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
     private String accumulatorVideoName;
     private String splitVideosBucketName;
     private String accumulatedVideosBucketName;
+    private String secret;
 
     @SuppressWarnings("WeakerAccess")
     public VideoUploadHandler(String accumulatorVideoName,
                               String splitVideosBucketName,
-                              String accumulatedVideosBucketName) {
+                              String accumulatedVideosBucketName,
+                              String secret) {
         this.accumulatorVideoName = accumulatorVideoName;
         this.splitVideosBucketName = splitVideosBucketName;
         this.accumulatedVideosBucketName = accumulatedVideosBucketName;
+        this.secret = secret;
 
         s3Client = createS3Client(
                 getEnv(S3_ENDPOINT),
@@ -105,7 +111,8 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
             handleS3Event(S3BucketEvent.from(s3EventMap, jsonObjectMapper),
                     accumulatorVideoName,
                     splitVideosBucketName,
-                    accumulatedVideosBucketName);
+                    accumulatedVideosBucketName,
+                    secret);
             return "OK";
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, ex.getMessage(), ex);
@@ -116,7 +123,8 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
     private void handleS3Event(S3BucketEvent event,
                                String accumulatorVideoName,
                                String splitVideosBucketName,
-                               String accumulatedVideosBucketName) {
+                               String accumulatedVideosBucketName,
+                               String secret) {
         LOG.info("Process S3 event with: " + event);
 
         String participantId = event.getParticipantId();
@@ -124,12 +132,37 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
 
         final String s3UrlNewVideo = String.format("s3://%s/%s", splitVideosBucketName, event.getKey());
 
-        final String s3BucketKey = String.format("%s/%s/%s", challengeId, participantId, accumulatorVideoName);
+        final String hash = createHashFrom(challengeId, participantId, secret);
+        final String s3BucketKey = String.format("%s/%s/%s/%s", challengeId, participantId, hash, accumulatorVideoName);
         final String s3UrlAccumulatorVideo = String.format("s3://%s/%s", accumulatedVideosBucketName, s3BucketKey);
 
         LOG.info("Triggering ECS to process video for tags");
         ecsVideoTaskRunner.runVideoTask(
                 participantId, challengeId, s3UrlNewVideo, s3UrlAccumulatorVideo, accumulatorVideoName
         );
+    }
+
+    public String createHashFrom(String challengeId, String participantId, String secret) {
+        try {
+            return makeSHA1Hash(challengeId + participantId + secret);
+        } catch (NoSuchAlgorithmException | UnsupportedEncodingException ex) {
+            LOG.log(Level.SEVERE, "Could not create hash due to error: " + ex.getMessage(), ex);
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private String makeSHA1Hash(String input)
+            throws NoSuchAlgorithmException, UnsupportedEncodingException {
+        MessageDigest md = MessageDigest.getInstance("SHA1");
+        md.reset();
+        byte[] buffer = input.getBytes("UTF-8");
+        md.update(buffer);
+        byte[] digest = md.digest();
+
+        StringBuilder hexStr = new StringBuilder();
+        for (byte aDigest : digest) {
+            hexStr.append(Integer.toString((aDigest & 0xff) + 0x100, 16).substring(1));
+        }
+        return hexStr.toString();
     }
 }

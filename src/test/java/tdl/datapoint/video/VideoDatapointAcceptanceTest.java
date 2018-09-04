@@ -46,6 +46,7 @@ public class VideoDatapointAcceptanceTest {
     private static final String TDL_OFFICIAL_SPLIT_VIDEOS = "tdl-official-split-videos";
     private static final String TDL_OFFICIAL_VIDEOS = "tdl-official-videos";
     private static final String ACCUMULATOR_VIDEO_FILENAME = "real-recording.mp4";
+    private static final String SOME_SECRET = "password";
 
     @Rule
     public EnvironmentVariables environmentVariables = new EnvironmentVariables();
@@ -111,7 +112,8 @@ public class VideoDatapointAcceptanceTest {
         videoUploadHandler = new VideoUploadHandler(
                 ACCUMULATOR_VIDEO_FILENAME,
                 TDL_OFFICIAL_SPLIT_VIDEOS,
-                TDL_OFFICIAL_VIDEOS);
+                TDL_OFFICIAL_VIDEOS,
+                SOME_SECRET);
 
         QueueEventHandlers queueEventHandlers = new QueueEventHandlers();
         rawVideoUpdatedEvents = new ArrayList<>();
@@ -133,7 +135,8 @@ public class VideoDatapointAcceptanceTest {
         // Given - The participant produces Video files while solving a challenge
         String challengeId = "TCH";
         String participantId = generateId();
-        String s3AccumulatorVideoDestination = String.format("%s/%s/real-recording.mp4", challengeId, participantId);
+        String hash = videoUploadHandler.createHashFrom(challengeId, participantId, SOME_SECRET);
+        String s3AccumulatorVideoDestination = String.format("%s/%s/%s/real-recording.mp4", challengeId, participantId, hash);
         TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/before/real-recording.mp4");
         localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         String s3destination = String.format("%s/%s/screencast_1.mp4", challengeId, participantId);
@@ -154,7 +157,6 @@ public class VideoDatapointAcceptanceTest {
         RawVideoUpdatedEvent rawVideoUploaded = rawVideoUpdatedEvents.get(FIRST_ACCUMULATED_VIDEO_EVENT);
         assertThat("participantId matching", rawVideoUploaded.getParticipant(), equalTo(participantId));
         assertThat("challengeId matching", rawVideoUploaded.getChallengeId(), equalTo(challengeId));
-        String key = String.format("%s/%s/real-recording.mp4", challengeId, participantId);
         Path expectedAccumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/after/real-recording.mp4").asFile().toPath();
         //TODO use Http instead of s3
         Path actualAccumulatorVideo = new TestVideoFile(rawVideoUploaded.getVideoLink()).downloadFile();
@@ -167,7 +169,8 @@ public class VideoDatapointAcceptanceTest {
         // Given - The participant produces Video files while solving a challenge
         String challengeId = "TCH";
         String participantId = generateId();
-        String s3AccumulatorVideoDestination = String.format("%s/%s/real-recording.mp4", challengeId, participantId);
+        String hash = videoUploadHandler.createHashFrom(challengeId, participantId, SOME_SECRET);
+        String s3AccumulatorVideoDestination = String.format("%s/%s/%s/real-recording.mp4", challengeId, participantId, hash);
         TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/before/real-recording.mp4");
         localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         String s3SecondVideoDestination = String.format("%s/%s/screencast_2.mp4", challengeId, participantId);
@@ -188,7 +191,6 @@ public class VideoDatapointAcceptanceTest {
         RawVideoUpdatedEvent rawVideoUploaded = rawVideoUpdatedEvents.get(FIRST_ACCUMULATED_VIDEO_EVENT);
         assertThat("participantId matching", rawVideoUploaded.getParticipant(), equalTo(participantId));
         assertThat("challengeId matching", rawVideoUploaded.getChallengeId(), equalTo(challengeId));
-        String key = String.format("%s/%s/real-recording.mp4", challengeId, participantId);
         Path expectedAccumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/after/real-recording.mp4").asFile().toPath();
         //TODO use Http instead of s3
         Path actualAccumulatorVideo = new TestVideoFile(rawVideoUploaded.getVideoLink()).downloadFile();
