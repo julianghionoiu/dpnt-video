@@ -43,6 +43,10 @@ public class VideoDatapointAcceptanceTest {
     private static final int TASK_FINISH_CHECK_RETRY_COUNT = 10;
     private static final int FIRST_ACCUMULATED_VIDEO_EVENT = 0;
 
+    private static final String TDL_OFFICIAL_SPLIT_VIDEOS = "tdl-official-split-videos";
+    private static final String TDL_OFFICIAL_VIDEOS = "tdl-official-videos";
+    private static final String ACCUMULATOR_VIDEO_FILENAME = "real-recording.mp4";
+
     @Rule
     public EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
@@ -92,19 +96,22 @@ public class VideoDatapointAcceptanceTest {
         localS3SplitVideosBucket = LocalS3Bucket.createInstance(
                 getEnv(ApplicationEnv.S3_ENDPOINT),
                 getEnv(ApplicationEnv.S3_REGION),
-                "tdl-official-split-videos");
+                TDL_OFFICIAL_SPLIT_VIDEOS);
 
         localS3AccumulatedVideoBucket = LocalS3Bucket.createInstance(
                 getEnv(ApplicationEnv.S3_ENDPOINT),
                 getEnv(ApplicationEnv.S3_REGION),
-                "tdl-official-videos");
+                TDL_OFFICIAL_VIDEOS);
 
         sqsEventQueue = LocalSQSQueue.createInstance(
                 getEnv(ApplicationEnv.SQS_ENDPOINT),
                 getEnv(ApplicationEnv.SQS_REGION),
                 getEnv(ApplicationEnv.SQS_QUEUE_URL));
 
-        videoUploadHandler = new VideoUploadHandler();
+        videoUploadHandler = new VideoUploadHandler(
+                ACCUMULATOR_VIDEO_FILENAME,
+                TDL_OFFICIAL_SPLIT_VIDEOS,
+                TDL_OFFICIAL_VIDEOS);
 
         QueueEventHandlers queueEventHandlers = new QueueEventHandlers();
         rawVideoUpdatedEvents = new ArrayList<>();
@@ -130,7 +137,7 @@ public class VideoDatapointAcceptanceTest {
         TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/before/real-recording.mp4");
         localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         String s3destination = String.format("%s/%s/screencast_1.mp4", challengeId, participantId);
-        TestVideoFile videoForTestChallenge = new TestVideoFile("screencast_20180727T144854.mp4");
+            TestVideoFile videoForTestChallenge = new TestVideoFile("screencast_20180727T144854.mp4");
 
         // When - Upload event happens
         S3Event s3Event = localS3SplitVideosBucket.putObject(videoForTestChallenge.asFile(), s3destination);

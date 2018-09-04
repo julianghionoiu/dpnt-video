@@ -34,9 +34,18 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
     private final ECSVideoTaskRunner ecsVideoTaskRunner;
     private AmazonS3 s3Client;
     private ObjectMapper jsonObjectMapper;
+    private String accumulatorVideoName;
+    private String splitVideosBucketName;
+    private String accumulatedVideosBucketName;
 
     @SuppressWarnings("WeakerAccess")
-    public VideoUploadHandler() {
+    public VideoUploadHandler(String accumulatorVideoName,
+                              String splitVideosBucketName,
+                              String accumulatedVideosBucketName) {
+        this.accumulatorVideoName = accumulatorVideoName;
+        this.splitVideosBucketName = splitVideosBucketName;
+        this.accumulatedVideosBucketName = accumulatedVideosBucketName;
+
         s3Client = createS3Client(
                 getEnv(S3_ENDPOINT),
                 getEnv(S3_REGION));
@@ -93,7 +102,10 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
     @Override
     public String handleRequest(Map<String, Object> s3EventMap, Context context) {
         try {
-            handleS3Event(S3BucketEvent.from(s3EventMap, jsonObjectMapper));
+            handleS3Event(S3BucketEvent.from(s3EventMap, jsonObjectMapper),
+                    accumulatorVideoName,
+                    splitVideosBucketName,
+                    accumulatedVideosBucketName);
             return "OK";
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, ex.getMessage(), ex);
@@ -101,24 +113,23 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
         }
     }
 
-    private void handleS3Event(S3BucketEvent event) {
+    private void handleS3Event(S3BucketEvent event,
+                               String accumulatorVideoName,
+                               String splitVideosBucketName,
+                               String accumulatedVideosBucketName) {
         LOG.info("Process S3 event with: " + event);
 
         String participantId = event.getParticipantId();
         String challengeId = event.getChallengeId();
 
-        final String ACCUMULATOR_VIDEO_NAME = "real-recording.mp4";
-        final String SPLIT_VIDEOS_BUCKET_NAME = "tdl-official-split-videos";
-        final String ACCUMULATED_VIDEOS_BUCKET_NAME = "tdl-official-videos";
+        final String s3UrlNewVideo = String.format("s3://%s/%s", splitVideosBucketName, event.getKey());
 
-        final String s3UrlNewVideo = String.format("s3://%s/%s", SPLIT_VIDEOS_BUCKET_NAME, event.getKey());
-
-        final String s3BucketKey = String.format("%s/%s/%s", challengeId, participantId, ACCUMULATOR_VIDEO_NAME);
-        final String s3UrlAccumulatorVideo = String.format("s3://%s/%s", ACCUMULATED_VIDEOS_BUCKET_NAME, s3BucketKey);
+        final String s3BucketKey = String.format("%s/%s/%s", challengeId, participantId, accumulatorVideoName);
+        final String s3UrlAccumulatorVideo = String.format("s3://%s/%s", accumulatedVideosBucketName, s3BucketKey);
 
         LOG.info("Triggering ECS to process video for tags");
         ecsVideoTaskRunner.runVideoTask(
-                participantId, challengeId, s3UrlNewVideo, s3UrlAccumulatorVideo
+                participantId, challengeId, s3UrlNewVideo, s3UrlAccumulatorVideo, accumulatorVideoName
         );
     }
 }

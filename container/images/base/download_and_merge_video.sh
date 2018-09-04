@@ -31,9 +31,9 @@ ensure_env "PARTICIPANT_ID"
 ensure_env "CHALLENGE_ID"
 ensure_env "S3_URL_NEW_VIDEO"
 ensure_env "S3_URL_ACCUMULATOR_VIDEO"
+ensure_env "ACCUMULATOR_VIDEO_NAME"
 
 echo  "~~~~~~ Download and merge video into accumulator ~~~~~~" > /dev/null
-TARGET_VIDEO_NAME="real-recording.mp4"
 VIDEOS_LIST="mylist.txt"
 echo  "Downloading new screencast and the accumulator videos from the s3 bucket"
 NEW_VIDEO=$(echo ${S3_URL_NEW_VIDEO##*/})
@@ -42,22 +42,22 @@ aws s3 ls ${S3_URL_ACCUMULATOR_VIDEO} --endpoint ${S3_ENDPOINT} && \
           aws s3 cp "${S3_URL_ACCUMULATOR_VIDEO}" . --endpoint ${S3_ENDPOINT} || true
 
 rm ${VIDEOS_LIST} || true
-if [[ -s "${TARGET_VIDEO_NAME}" ]]; then
-   echo "file '${TARGET_VIDEO_NAME}'" > ${VIDEOS_LIST}
+if [[ -s "${ACCUMULATOR_VIDEO_NAME}" ]]; then
+   echo "file '${ACCUMULATOR_VIDEO_NAME}'" > ${VIDEOS_LIST}
    echo "file '${NEW_VIDEO}'" >> ${VIDEOS_LIST}
 
-   echo  "Concatenating '${NEW_VIDEO}' at the bottom of '${TARGET_VIDEO_NAME}'"
+   echo  "Concatenating '${NEW_VIDEO}' at the bottom of '${ACCUMULATOR_VIDEO_NAME}'"
    cat ${VIDEOS_LIST}
-   ffmpeg -f concat -safe 0 -i ${VIDEOS_LIST} -c copy "new_${TARGET_VIDEO_NAME}"
-   rm ${TARGET_VIDEO_NAME}
-   mv "new_${TARGET_VIDEO_NAME}" ${TARGET_VIDEO_NAME}
+   ffmpeg -f concat -safe 0 -i ${VIDEOS_LIST} -c copy "new_${ACCUMULATOR_VIDEO_NAME}"
+   rm ${ACCUMULATOR_VIDEO_NAME}
+   mv "new_${ACCUMULATOR_VIDEO_NAME}" ${ACCUMULATOR_VIDEO_NAME}
 else
-   echo  "Copying '${NEW_VIDEO}' into '${TARGET_VIDEO_NAME}' as accumulator video does not pre-exist"
-   cp ${NEW_VIDEO} ${TARGET_VIDEO_NAME}
+   echo  "Copying '${NEW_VIDEO}' into '${ACCUMULATOR_VIDEO_NAME}' as accumulator video does not pre-exist"
+   cp ${NEW_VIDEO} ${ACCUMULATOR_VIDEO_NAME}
 fi
 
 echo  "Uploading the merged video to '${S3_URL_ACCUMULATOR_VIDEO}'"
-aws s3 cp ${TARGET_VIDEO_NAME} "${S3_URL_ACCUMULATOR_VIDEO}" --acl public-read --endpoint ${S3_ENDPOINT}
+aws s3 cp ${ACCUMULATOR_VIDEO_NAME} "${S3_URL_ACCUMULATOR_VIDEO}" --acl public-read --endpoint ${S3_ENDPOINT}
 
 echo  "~~~~~~ Publish results ~~~~~~" > /dev/null
 BUCKET_AND_KEY=$(echo ${S3_URL_ACCUMULATOR_VIDEO} | cut -c6-) # remove the prefix s3://

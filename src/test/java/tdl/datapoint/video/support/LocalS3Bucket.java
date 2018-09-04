@@ -4,7 +4,6 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.S3Object;
 
 import java.io.File;
 
@@ -33,10 +32,6 @@ public class LocalS3Bucket {
         createBucketIfNotExists(s3Client, bucket);
         s3Client.putObject(bucket, key, object);
         return new S3Event(bucket, key);
-    }
-
-    public S3Object getObject(String key) {
-        return s3Client.getObject(bucket, key);
     }
 
     @SuppressWarnings("deprecation")
