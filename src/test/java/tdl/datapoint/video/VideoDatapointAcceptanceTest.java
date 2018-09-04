@@ -61,6 +61,10 @@ public class VideoDatapointAcceptanceTest {
     private List<RawVideoUpdatedEvent> rawVideoUpdatedEvents;
     private ObjectMapper mapper;
 
+    private String challengeId;
+    private String participantId;
+    private String s3AccumulatorVideoDestination;
+
     private static String getEnv(ApplicationEnv key) {
         String env = System.getenv(key.name());
         if (env == null || env.trim().isEmpty() || "null".equals(env)) {
@@ -121,6 +125,11 @@ public class VideoDatapointAcceptanceTest {
         sqsEventQueue.subscribeToMessages(queueEventHandlers);
 
         mapper = new ObjectMapper();
+
+        challengeId = "TCH";
+        participantId = generateId();
+        final String hash = videoUploadHandler.createHashFrom(challengeId, participantId, SOME_SECRET);
+        s3AccumulatorVideoDestination = String.format("%s/%s/%s/%s", challengeId, participantId, hash, ACCUMULATOR_VIDEO_FILENAME);
     }
 
     @After
@@ -133,11 +142,7 @@ public class VideoDatapointAcceptanceTest {
     @Test
     public void upload_first_video_when_accumulator_does_not_exist_yet() throws Exception {
         // Given - The participant produces Video files while solving a challenge
-        String challengeId = "TCH";
-        String participantId = generateId();
-        String hash = videoUploadHandler.createHashFrom(challengeId, participantId, SOME_SECRET);
-        String s3AccumulatorVideoDestination = String.format("%s/%s/%s/real-recording.mp4", challengeId, participantId, hash);
-        TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/before/real-recording.mp4");
+        TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/before/" + ACCUMULATOR_VIDEO_FILENAME);
         localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         String s3destination = String.format("%s/%s/screencast_1.mp4", challengeId, participantId);
             TestVideoFile videoForTestChallenge = new TestVideoFile("screencast_20180727T144854.mp4");
@@ -157,8 +162,7 @@ public class VideoDatapointAcceptanceTest {
         RawVideoUpdatedEvent rawVideoUploaded = rawVideoUpdatedEvents.get(FIRST_ACCUMULATED_VIDEO_EVENT);
         assertThat("participantId matching", rawVideoUploaded.getParticipant(), equalTo(participantId));
         assertThat("challengeId matching", rawVideoUploaded.getChallengeId(), equalTo(challengeId));
-        Path expectedAccumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/after/real-recording.mp4").asFile().toPath();
-        //TODO use Http instead of s3
+        Path expectedAccumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/after/" + ACCUMULATOR_VIDEO_FILENAME).asFile().toPath();
         Path actualAccumulatorVideo = new TestVideoFile(rawVideoUploaded.getVideoLink()).downloadFile();
         //TODO compare videos using dev-screen-record's logic: see acceptance test that generates and reads QRcode
         assertThatFilesAreEqual("Expect the files to match in content", actualAccumulatorVideo, expectedAccumulatorVideo);
@@ -167,11 +171,7 @@ public class VideoDatapointAcceptanceTest {
     @Test
     public void upload_when_accumulator_video_exists() throws Exception {
         // Given - The participant produces Video files while solving a challenge
-        String challengeId = "TCH";
-        String participantId = generateId();
-        String hash = videoUploadHandler.createHashFrom(challengeId, participantId, SOME_SECRET);
-        String s3AccumulatorVideoDestination = String.format("%s/%s/%s/real-recording.mp4", challengeId, participantId, hash);
-        TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/before/real-recording.mp4");
+        TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/before/" + ACCUMULATOR_VIDEO_FILENAME);
         localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         String s3SecondVideoDestination = String.format("%s/%s/screencast_2.mp4", challengeId, participantId);
         TestVideoFile s3SecondVideo = new TestVideoFile("screencast_20180727T225445.mp4");
@@ -191,8 +191,7 @@ public class VideoDatapointAcceptanceTest {
         RawVideoUpdatedEvent rawVideoUploaded = rawVideoUpdatedEvents.get(FIRST_ACCUMULATED_VIDEO_EVENT);
         assertThat("participantId matching", rawVideoUploaded.getParticipant(), equalTo(participantId));
         assertThat("challengeId matching", rawVideoUploaded.getChallengeId(), equalTo(challengeId));
-        Path expectedAccumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/after/real-recording.mp4").asFile().toPath();
-        //TODO use Http instead of s3
+        Path expectedAccumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/after/"+ACCUMULATOR_VIDEO_FILENAME).asFile().toPath();
         Path actualAccumulatorVideo = new TestVideoFile(rawVideoUploaded.getVideoLink()).downloadFile();
         //TODO compare videos using dev-screen-record's logic: see acceptance test that generates and reads QRcode
         assertThatFilesAreEqual("Expect the files to match in content", actualAccumulatorVideo, expectedAccumulatorVideo);
