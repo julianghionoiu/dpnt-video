@@ -56,12 +56,12 @@ else
    cp ${NEW_VIDEO} ${TARGET_VIDEO_NAME}
 fi
 
-echo  "Uploading the the merged video to '${S3_URL_ACCUMULATOR_VIDEO}'"
-aws s3 cp ${TARGET_VIDEO_NAME} "${S3_URL_ACCUMULATOR_VIDEO}" --endpoint ${S3_ENDPOINT}
+echo  "Uploading the merged video to '${S3_URL_ACCUMULATOR_VIDEO}'"
+aws s3 cp ${TARGET_VIDEO_NAME} "${S3_URL_ACCUMULATOR_VIDEO}" --acl public-read --endpoint ${S3_ENDPOINT}
 
 echo  "~~~~~~ Publish results ~~~~~~" > /dev/null
-##TODO check minio to see if we can get a http url & aws s3 - see docs
-VIDEO_LINK="$(aws s3 presign ${S3_URL_ACCUMULATOR_VIDEO} --expires-in 0 --endpoint ${S3_ENDPOINT})"
+BUCKET_AND_KEY=$(echo ${S3_URL_ACCUMULATOR_VIDEO} | cut -c6-) # remove the prefix s3://
+VIDEO_LINK="${S3_ENDPOINT}/${BUCKET_AND_KEY}"
 
 if [[ "${SQS_QUEUE_URL}" != http* ]]; then
     echo "SQS_QUEUE_URL does not seem to be valid. Will print to the console and exit" > /dev/null

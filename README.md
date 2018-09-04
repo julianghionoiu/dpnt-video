@@ -37,6 +37,7 @@ Start the local S3 and SQS simulators
 python local-sqs/elasticmq-wrapper.py start
 python local-s3/minio-wrapper.py start
 minio config host add myminio http://192.168.1.190:9000 local_test_access_key local_test_secret_key
+minio policy --recursive public myminio/tdl-official-videos
 ```
 
 The base container image needs to be build and tagged as `latest`:
@@ -126,6 +127,7 @@ export AWS_PROFILE=befaster                      # pre-configured profile contai
 minio mb myminio
 minio mb myminio/tdl-test-auth-split/TCH/user01/
 minio cp ./build/resources/test/screencast_20180727T144854.mp4 myminio/tdl-test-auth-split/TCH/user01/video.mp4
+minio policy --recursive public myminio/tdl-official-videos
 ```
 
 Invoke function manually
