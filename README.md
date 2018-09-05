@@ -32,7 +32,7 @@ sudo apt-get install ffmpeg
 brew install ffmpeg
 ```
 
-Start the local S3 and SQS simulators
+### Start the local S3 and SQS simulators (manually)
 ```bash
 python local-sqs/elasticmq-wrapper.py start
 python local-s3/minio-wrapper.py start
@@ -55,7 +55,9 @@ Try the below first:
 ping host.docker.internal
 ```
 
-If there is response, run the below command:
+### Start the local ECS simulator (manually)
+
+If there is response from the command in the previous section, then run the below command:
 
 ```bash
 python local-ecs/ecs-server-wrapper.py start config/local.params.yml
@@ -86,7 +88,25 @@ DOCKER_HOST_WITHIN_CONTAINER=n.n.n.n python local-ecs/ecs-server-wrapper.py star
 #### Windows
 `docker.for.win.host.internal` or `docker.for.win.localhost` or `n.n.n.n` - supported DNS entry of host (via Docker Host for Windows) on which the containers are running
 
+### Start the local S3, SQS and ECS simulators (via script)
+
+Run the start and stop scripts for the respective local AWS simulators:
+
+```bash
+./startExternalDependencies.sh    ### in case the local AWS simulators are not running
+```
+
+```bash
+./stopExternalDependencies.sh
+```
+
 ### Run the acceptance test
+
+Ensure that the above mentioned local AWS simulators are running before doing the below:
+
+```bash
+./startExternalDependencies.sh    ### in case the local AWS simulators are not running
+```
 
 ```bash
 ./gradlew --rerun-tasks test
@@ -97,6 +117,12 @@ Stop dependencies
 python local-sqs/elasticmq-wrapper.py stop
 python local-ecs/ecs-server-wrapper.py stop
 python local-s3/minio-wrapper.py stop
+```
+
+or 
+
+```bash
+./stopExternalDependencies.sh
 ```
 
 ## Packaging
@@ -116,7 +142,15 @@ serverless info
 
 Build package
 ```bash
+./startExternalDependencies.sh    ### in case the local AWS simulators are not running 
+```
+
+```bash
 ./gradlew clean test shadowJar
+```
+
+```bash
+./stopExternalDependencies.sh
 ```
 
 Setup local bucket
@@ -127,7 +161,6 @@ export AWS_PROFILE=befaster                      # pre-configured profile contai
 minio mb myminio
 minio mb myminio/tdl-test-auth-split/TCH/user01/
 minio cp ./build/resources/test/screencast_20180727T144854.mp4 myminio/tdl-test-auth-split/TCH/user01/video.mp4
-minio policy --recursive public myminio/tdl-official-videos
 ```
 
 Invoke function manually
