@@ -14,17 +14,9 @@ public class TestVideoFile {
 
     private String name;
 
-    private LocalS3Bucket s3Bucket;
-    private String s3Key;
-
     public TestVideoFile(String name) {
         this.name = name;
         resourcePath = Paths.get("src/test/resources/", name);
-    }
-
-    public TestVideoFile(LocalS3Bucket s3Bucket, String key) {
-        this.s3Bucket = s3Bucket;
-        this.s3Key = key;
     }
 
     public File asFile() {

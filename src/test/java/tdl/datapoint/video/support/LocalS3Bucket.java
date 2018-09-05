@@ -9,7 +9,7 @@ import java.io.File;
 
 public class LocalS3Bucket {
     private final AmazonS3 s3Client;
-    private String bucket;
+    private final String bucket;
 
     private LocalS3Bucket(AmazonS3 s3Client, String bucket) {
         this.s3Client = s3Client;

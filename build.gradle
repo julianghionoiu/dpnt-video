@@ -23,6 +23,10 @@ repositories {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
+ext {
+    humbleVideoVersion = '0.2.1'
+}
+
 dependencies {
     compile(
             'com.amazonaws:aws-lambda-java-core:1.1.0',
@@ -38,6 +42,13 @@ dependencies {
             'commons-io:commons-io:2.5',
     )
 
+    compile 'io.humble:humble-video-noarch:'+humbleVideoVersion
+
+    compile 'org.slf4j:slf4j-api:1.7.25'
+
+    testCompile 'org.projectlombok:lombok:1.16.16'
+
+    testCompile 'io.humble:humble-video-all:'+humbleVideoVersion
 
     testCompile('junit:junit:4.12') {
         exclude module: 'hamcrest-core'
@@ -51,6 +62,8 @@ dependencies {
             'com.github.stefanbirkner:system-rules:1.16.0',
             'org.yaml:snakeyaml:1.21'
     )
+    
+    testCompile 'com.google.zxing:core:3.3.0'
 }
 
 compileJava {

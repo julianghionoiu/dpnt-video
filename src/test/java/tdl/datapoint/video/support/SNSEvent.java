@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class SNSEvent {
 
-    private String message;
+    private final String message;
 
     public SNSEvent(String message) {
         this.message = message;

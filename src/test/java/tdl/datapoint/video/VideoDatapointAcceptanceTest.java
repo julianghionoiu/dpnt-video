@@ -11,11 +11,15 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.rules.TemporaryFolder;
 import org.yaml.snakeyaml.Yaml;
+import tdl.datapoint.video.barcode.OutputToBarcodeMatrixReader;
 import tdl.datapoint.video.support.LocalS3Bucket;
 import tdl.datapoint.video.support.LocalSQSQueue;
 import tdl.datapoint.video.support.S3Event;
 import tdl.datapoint.video.support.SNSEvent;
 import tdl.datapoint.video.support.TestVideoFile;
+import tdl.datapoint.video.time.FakeTimeSource;
+import tdl.datapoint.video.video.VideoPlayer;
+import tdl.datapoint.video.video.VideoPlayerException;
 import tdl.participant.queue.connector.EventProcessingException;
 import tdl.participant.queue.connector.QueueEventHandlers;
 import tdl.participant.queue.connector.SqsEventQueue;
@@ -26,7 +30,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +37,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 
@@ -41,7 +45,7 @@ public class VideoDatapointAcceptanceTest {
     private static final Context NO_CONTEXT = null;
     private static final int WAIT_BEFORE_RETRY_IN_MILLIS = 2000;
     private static final int TASK_FINISH_CHECK_RETRY_COUNT = 10;
-    private static final int FIRST_ACCUMULATED_VIDEO_EVENT = 0;
+    private static final int ACCUMULATED_VIDEO_EVENT = 0;
 
     private static final String TDL_OFFICIAL_SPLIT_VIDEOS = "tdl-official-split-videos";
     private static final String TDL_OFFICIAL_VIDEOS = "tdl-official-videos";
@@ -145,7 +149,7 @@ public class VideoDatapointAcceptanceTest {
         TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/before/" + ACCUMULATOR_VIDEO_FILENAME);
         localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         String s3destination = String.format("%s/%s/screencast_1.mp4", challengeId, participantId);
-            TestVideoFile videoForTestChallenge = new TestVideoFile("screencast_20180727T144854.mp4");
+        TestVideoFile videoForTestChallenge = new TestVideoFile("screencast_20180727T144854.mp4");
 
         // When - Upload event happens
         S3Event s3Event = localS3SplitVideosBucket.putObject(videoForTestChallenge.asFile(), s3destination);
@@ -156,16 +160,7 @@ public class VideoDatapointAcceptanceTest {
         waitForQueueToReceiveEvents();
 
         // Then - Raw video uploaded events are computed for the deploy tags
-        assertThat("Raw video update events match check: 1 events expected", rawVideoUpdatedEvents.size(), equalTo(1));
-        System.out.println("Received video events: " + rawVideoUpdatedEvents);
-        rawVideoUpdatedEvents.sort(Comparator.comparing(RawVideoUpdatedEvent::getChallengeId));
-        RawVideoUpdatedEvent rawVideoUploaded = rawVideoUpdatedEvents.get(FIRST_ACCUMULATED_VIDEO_EVENT);
-        assertThat("participantId matching", rawVideoUploaded.getParticipant(), equalTo(participantId));
-        assertThat("challengeId matching", rawVideoUploaded.getChallengeId(), equalTo(challengeId));
-        Path expectedAccumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/after/" + ACCUMULATOR_VIDEO_FILENAME).asFile().toPath();
-        Path actualAccumulatorVideo = new TestVideoFile(rawVideoUploaded.getVideoLink()).downloadFile();
-        //TODO compare videos using dev-screen-record's logic: see acceptance test that generates and reads QRcode
-        assertThatFilesAreEqual("Expect the files to match in content", actualAccumulatorVideo, expectedAccumulatorVideo);
+        assertThatTheVideosMatchAfterMerging("tdl/datapoint/video/first_video_upload/after/" + ACCUMULATOR_VIDEO_FILENAME);
     }
 
     @Test
@@ -185,24 +180,7 @@ public class VideoDatapointAcceptanceTest {
         waitForQueueToReceiveEvents();
 
         // Then - Raw video uploaded events are computed for the deploy tags
-        assertThat("Raw video update events match check: 1 events expected", rawVideoUpdatedEvents.size(), equalTo(1));
-        System.out.println("Received video events: " + rawVideoUpdatedEvents);
-        rawVideoUpdatedEvents.sort(Comparator.comparing(RawVideoUpdatedEvent::getChallengeId));
-        RawVideoUpdatedEvent rawVideoUploaded = rawVideoUpdatedEvents.get(FIRST_ACCUMULATED_VIDEO_EVENT);
-        assertThat("participantId matching", rawVideoUploaded.getParticipant(), equalTo(participantId));
-        assertThat("challengeId matching", rawVideoUploaded.getChallengeId(), equalTo(challengeId));
-        Path expectedAccumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/after/"+ACCUMULATOR_VIDEO_FILENAME).asFile().toPath();
-        Path actualAccumulatorVideo = new TestVideoFile(rawVideoUploaded.getVideoLink()).downloadFile();
-        //TODO compare videos using dev-screen-record's logic: see acceptance test that generates and reads QRcode
-        assertThatFilesAreEqual("Expect the files to match in content", actualAccumulatorVideo, expectedAccumulatorVideo);
-    }
-
-    private void assertThatFilesAreEqual(String reason, Path firstFile, Path secondFile) throws IOException {
-        byte[] firstFileAsBytes = Files.readAllBytes(firstFile);
-        byte[] secondFileAsBytes = Files.readAllBytes(secondFile);
-
-        assertThat(reason,
-                Arrays.equals(firstFileAsBytes, secondFileAsBytes), equalTo(true));
+        assertThatTheVideosMatchAfterMerging("tdl/datapoint/video/second_video_upload/after/" + ACCUMULATOR_VIDEO_FILENAME);
     }
 
     private String wrapAsSNSEvent(S3Event s3Event) throws JsonProcessingException {
@@ -216,5 +194,71 @@ public class VideoDatapointAcceptanceTest {
             Thread.sleep(WAIT_BEFORE_RETRY_IN_MILLIS);
             retryCtr++;
         }
+    }
+
+    private void assertThatTheVideosMatchAfterMerging(String accumulatedVideoFile) throws IOException, VideoPlayerException, InterruptedException {
+        assertThat("Raw video update events match check: 1 events expected", rawVideoUpdatedEvents.size(), equalTo(1));
+        System.out.println("Received video events: " + rawVideoUpdatedEvents);
+        rawVideoUpdatedEvents.sort(Comparator.comparing(RawVideoUpdatedEvent::getChallengeId));
+        RawVideoUpdatedEvent rawVideoUploaded = rawVideoUpdatedEvents.get(ACCUMULATED_VIDEO_EVENT);
+        assertThat("participantId matching", rawVideoUploaded.getParticipant(), equalTo(participantId));
+        assertThat("challengeId matching", rawVideoUploaded.getChallengeId(), equalTo(challengeId));
+
+        Path expectedAccumulatorVideo = new TestVideoFile(accumulatedVideoFile).asFile().toPath();
+        Path actualAccumulatorVideo = new TestVideoFile(rawVideoUploaded.getVideoLink()).downloadFile();
+        assertThatVideoFilesAreEqual(actualAccumulatorVideo, expectedAccumulatorVideo);
+    }
+
+    private void assertThatVideoFilesAreEqual(Path firstFile, Path secondFile)
+            throws InterruptedException, IOException, VideoPlayerException {
+        final List<OutputToBarcodeMatrixReader.TimestampedPayload>
+                firstVideoFileBarcodes = getBarcodeFromVideo(firstFile.toString());
+
+        final List<OutputToBarcodeMatrixReader.TimestampedPayload>
+                secondVideoFileBarcodes = getBarcodeFromVideo(secondFile.toString());
+
+        assertThat("Checking if the two videos have the same number of frames",
+                firstVideoFileBarcodes.size(), equalTo(secondVideoFileBarcodes.size()));
+
+        for (int frameIndex = 0; frameIndex < firstVideoFileBarcodes.size(); frameIndex++) {
+            assertDecodedBarcode(firstVideoFileBarcodes.get(frameIndex), secondVideoFileBarcodes.get(frameIndex));
+        }
+    }
+
+    private List<OutputToBarcodeMatrixReader.TimestampedPayload> getBarcodeFromVideo(String path)
+            throws VideoPlayerException, InterruptedException, IOException {
+        OutputToBarcodeMatrixReader barcodeReader = new OutputToBarcodeMatrixReader(new FakeTimeSource());
+        VideoPlayer videoPlayer = new VideoPlayer(barcodeReader, new FakeTimeSource());
+        videoPlayer.open(path);
+
+        videoPlayer.play();
+        videoPlayer.close();
+        return barcodeReader.getDecodedBarcodes().stream()
+                .filter(this::isPayloadConsistent)
+                .collect(Collectors.toList());
+    }
+
+    private boolean isPayloadConsistent(OutputToBarcodeMatrixReader.TimestampedPayload payload) {
+        int timebaseIncrement = 200;
+        long expectedPayload = (payload.videoTimestamp - 1) * timebaseIncrement;
+        try {
+            return (Long.parseLong(payload.topLeftPayload) == expectedPayload)
+                    && (Long.parseLong(payload.topRightPayload) == expectedPayload)
+                    && (Long.parseLong(payload.bottomLeftPayload) == expectedPayload)
+                    && (Long.parseLong(payload.bottomRightPayload) == expectedPayload);
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private void assertDecodedBarcode(OutputToBarcodeMatrixReader.TimestampedPayload firstVideoFrame,
+                                      OutputToBarcodeMatrixReader.TimestampedPayload secondVideoFrame) {
+        Long timestamp = firstVideoFrame.videoTimestamp;
+
+        assertThat("[" + timestamp + "] videoTimestamp", firstVideoFrame.videoTimestamp, is(secondVideoFrame.videoTimestamp));
+        assertThat("[" + timestamp + "] topLeftPayload", firstVideoFrame.topLeftPayload, is(secondVideoFrame.topLeftPayload));
+        assertThat("[" + timestamp + "] topRightPayload", firstVideoFrame.topRightPayload, is(secondVideoFrame.topRightPayload));
+        assertThat("[" + timestamp + "] bottomLeftPayload", firstVideoFrame.bottomLeftPayload, is(secondVideoFrame.bottomLeftPayload));
+        assertThat("[" + timestamp + "] bottomRightPayload", firstVideoFrame.bottomRightPayload, is(secondVideoFrame.bottomRightPayload));
     }
 }
