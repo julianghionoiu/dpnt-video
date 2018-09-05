@@ -100,7 +100,7 @@ public class VideoMergingAcceptanceTest {
         final String hash = videoUploadHandler.createHashFrom(challengeId, participantId, SOME_SECRET);
         s3AccumulatorVideoDestination = String.format("%s/%s/%s/%s", challengeId, participantId, hash, ACCUMULATOR_VIDEO_FILENAME);
 
-        compareVideos = new CompareVideos(rawVideoUpdatedEvents, challengeId, participantId);
+        compareVideos = new CompareVideos(challengeId, participantId);
     }
 
     @After
@@ -125,7 +125,8 @@ public class VideoMergingAcceptanceTest {
         waitForQueueToReceiveEvents();
 
         // Then - Raw video uploaded events are computed for the deploy tags
-        compareVideos.assertThatTheVideosMatchAfterMerging("tdl/datapoint/video/first_video_upload/after/" + ACCUMULATOR_VIDEO_FILENAME);
+        compareVideos.assertThatTheVideosMatchAfterMerging(rawVideoUpdatedEvents,
+                "tdl/datapoint/video/first_video_upload/after/" + ACCUMULATOR_VIDEO_FILENAME);
     }
 
     @Test
@@ -145,7 +146,8 @@ public class VideoMergingAcceptanceTest {
         waitForQueueToReceiveEvents();
 
         // Then - Raw video uploaded events are computed for the deploy tags
-        compareVideos.assertThatTheVideosMatchAfterMerging("tdl/datapoint/video/second_video_upload/after/" + ACCUMULATOR_VIDEO_FILENAME);
+        compareVideos.assertThatTheVideosMatchAfterMerging(rawVideoUpdatedEvents,
+                "tdl/datapoint/video/second_video_upload/after/" + ACCUMULATOR_VIDEO_FILENAME);
     }
 
     //~~~~~~~~~~ Helpers ~~~~~~~~~~~~~`
