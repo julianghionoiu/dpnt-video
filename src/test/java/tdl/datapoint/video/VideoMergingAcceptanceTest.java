@@ -31,8 +31,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-
-public class VideoDatapointAcceptanceTest {
+public class VideoMergingAcceptanceTest {
     private static final Context NO_CONTEXT = null;
     private static final int WAIT_BEFORE_RETRY_IN_MILLIS = 2000;
     private static final int TASK_FINISH_CHECK_RETRY_COUNT = 10;
@@ -61,33 +60,6 @@ public class VideoDatapointAcceptanceTest {
     private LocalS3Bucket localS3SplitVideosBucket;
 
     private String s3AccumulatorVideoDestination;
-
-    private static String getEnv(ApplicationEnv key) {
-        String env = System.getenv(key.name());
-        if (env == null || env.trim().isEmpty() || "null".equals(env)) {
-            throw new RuntimeException("[Startup] Environment variable " + key + " not set");
-        }
-        return env;
-    }
-
-    private static void setEnvFrom(EnvironmentVariables environmentVariables, Path path) throws IOException {
-        String yamlString = Files.lines(path).collect(Collectors.joining("\n"));
-
-        Yaml yaml = new Yaml();
-        Map<String, String> values = yaml.load(yamlString);
-
-        values.forEach(environmentVariables::set);
-    }
-
-    private static String generateId() {
-        return UUID.randomUUID().toString().replaceAll("-", "");
-    }
-
-    private static Map<String, Object> convertToMap(String json) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(json, new TypeReference<Map<String, Object>>() {
-        });
-    }
 
     @Before
     public void setUp() throws EventProcessingException, IOException {
@@ -136,18 +108,16 @@ public class VideoDatapointAcceptanceTest {
         sqsEventQueue.unsubscribeFromMessages();
     }
 
-    //~~~~~~~~~~ Helpers ~~~~~~~~~~~~~`
-
     @Test
     public void upload_first_video_when_accumulator_does_not_exist_yet() throws Exception {
         // Given - The participant produces Video files while solving a challenge
         TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/before/" + ACCUMULATOR_VIDEO_FILENAME);
         localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         String s3destination = String.format("%s/%s/screencast_1.mp4", challengeId, participantId);
-        TestVideoFile videoForTestChallenge = new TestVideoFile("screencast_20180727T144854.mp4");
+        TestVideoFile newVideo = new TestVideoFile("screencast_20180727T144854.mp4");
 
         // When - Upload event happens
-        S3Event s3Event = localS3SplitVideosBucket.putObject(videoForTestChallenge.asFile(), s3destination);
+        S3Event s3Event = localS3SplitVideosBucket.putObject(newVideo.asFile(), s3destination);
         videoUploadHandler.handleRequest(
                 convertToMap(wrapAsSNSEvent(s3Event)),
                 NO_CONTEXT);
@@ -164,10 +134,10 @@ public class VideoDatapointAcceptanceTest {
         TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/before/" + ACCUMULATOR_VIDEO_FILENAME);
         localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         String s3SecondVideoDestination = String.format("%s/%s/screencast_2.mp4", challengeId, participantId);
-        TestVideoFile s3SecondVideo = new TestVideoFile("screencast_20180727T225445.mp4");
+        TestVideoFile newVideo = new TestVideoFile("screencast_20180727T225445.mp4");
 
         // When - Upload event happens
-        S3Event s3Event = localS3SplitVideosBucket.putObject(s3SecondVideo.asFile(), s3SecondVideoDestination);
+        S3Event s3Event = localS3SplitVideosBucket.putObject(newVideo.asFile(), s3SecondVideoDestination);
         videoUploadHandler.handleRequest(
                 convertToMap(wrapAsSNSEvent(s3Event)),
                 NO_CONTEXT);
@@ -176,6 +146,35 @@ public class VideoDatapointAcceptanceTest {
 
         // Then - Raw video uploaded events are computed for the deploy tags
         compareVideos.assertThatTheVideosMatchAfterMerging("tdl/datapoint/video/second_video_upload/after/" + ACCUMULATOR_VIDEO_FILENAME);
+    }
+
+    //~~~~~~~~~~ Helpers ~~~~~~~~~~~~~`
+
+    private static String getEnv(ApplicationEnv key) {
+        String env = System.getenv(key.name());
+        if (env == null || env.trim().isEmpty() || "null".equals(env)) {
+            throw new RuntimeException("[Startup] Environment variable " + key + " not set");
+        }
+        return env;
+    }
+
+    private static void setEnvFrom(EnvironmentVariables environmentVariables, Path path) throws IOException {
+        String yamlString = Files.lines(path).collect(Collectors.joining("\n"));
+
+        Yaml yaml = new Yaml();
+        Map<String, String> values = yaml.load(yamlString);
+
+        values.forEach(environmentVariables::set);
+    }
+
+    private static String generateId() {
+        return UUID.randomUUID().toString().replaceAll("-", "");
+    }
+
+    private static Map<String, Object> convertToMap(String json) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.readValue(json, new TypeReference<Map<String, Object>>() {
+        });
     }
 
     private String wrapAsSNSEvent(S3Event s3Event) throws JsonProcessingException {
