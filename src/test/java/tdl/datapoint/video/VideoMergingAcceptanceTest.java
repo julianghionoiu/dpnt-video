@@ -120,7 +120,7 @@ public class VideoMergingAcceptanceTest {
         TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/before/" + ACCUMULATOR_VIDEO_FILENAME);
         localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         String s3destination = String.format("%s/%s/screencast_1.mp4", challengeId, participantId);
-        TestVideoFile newVideo = new TestVideoFile("screencast_20180727T144854.mp4");
+        TestVideoFile newVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/screencast_20180727T144854.mp4");
 
         // When - Upload event happens
         S3Event s3Event = localS3SplitVideosBucket.putObject(newVideo.asFile(), s3destination);
@@ -141,7 +141,7 @@ public class VideoMergingAcceptanceTest {
         TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/before/" + ACCUMULATOR_VIDEO_FILENAME);
         localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         String s3SecondVideoDestination = String.format("%s/%s/screencast_2.mp4", challengeId, participantId);
-        TestVideoFile newVideo = new TestVideoFile("screencast_20180727T225445.mp4");
+        TestVideoFile newVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/screencast_20180727T225445.mp4");
 
         // When - Upload event happens
         S3Event s3Event = localS3SplitVideosBucket.putObject(newVideo.asFile(), s3SecondVideoDestination);
