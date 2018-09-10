@@ -37,6 +37,15 @@ public class TokenSigningService {
     public String createHashFrom(String challengeId, String participantId) throws UnsupportedEncodingException {
         String signedToken = sign(challengeId + participantId);
         String encodeToken = Base64.getEncoder().encodeToString(signedToken.getBytes("UTF-8"));
+        encodeToken = (String) encodeToken
+                .replaceAll(":", "0")     // :
+                .replaceAll(";", "0")     // ;
+                .replaceAll("<", "0")     // <
+                .replaceAll("=", "0")     // =
+                .replaceAll(">", "0")     // >
+                .replaceAll("\\?", "0")   // ?
+                .replaceAll("/", "0")     // /
+                .replaceAll("\\\\", "0"); // /
         log.info("Signed token (Base64 encoded): {}", encodeToken);
         return encodeToken;
     }
