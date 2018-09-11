@@ -34,4 +34,10 @@ public class TestVideoFile {
 
         return targetPath;
     }
+
+    public boolean isNotPresentOrIsEmpty() {
+        boolean fileDoesNotExist = ! resourcePath.toFile().exists();
+        boolean empty = resourcePath.toFile().length() == 0;
+        return fileDoesNotExist || empty;
+    }
 }

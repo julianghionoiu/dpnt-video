@@ -34,6 +34,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 public class VideoMergingAcceptanceTest {
     private static final Context NO_CONTEXT = null;
     private static final int WAIT_BEFORE_RETRY_IN_MILLIS = 2000;
@@ -118,6 +121,7 @@ public class VideoMergingAcceptanceTest {
         // Given - The participant produces Video files while solving a challenge
         TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/before/" + ACCUMULATOR_VIDEO_FILENAME);
         localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
+        assertThat(accumulatorVideo.isNotPresentOrIsEmpty(), is(true));
         String s3destination = String.format("%s/%s/screencast_1.mp4", challengeId, participantId);
         TestVideoFile newVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/screencast_20180727T144854.mp4");
 
