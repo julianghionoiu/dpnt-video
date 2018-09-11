@@ -9,7 +9,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tdl.datapoint.video.processing.ECSVideoTaskRunner;
 import tdl.datapoint.video.processing.S3BucketEvent;
-import tdl.datapoint.video.security.TokenSigningService;
+import tdl.datapoint.video.security.TokenEncryptionService;
 
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
@@ -30,7 +30,7 @@ import static tdl.datapoint.video.ApplicationEnv.ECS_VPC_SUBNET;
 class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> {
     private static final Logger LOG = Logger.getLogger(VideoUploadHandler.class.getName());
     private final ECSVideoTaskRunner ecsVideoTaskRunner;
-    private final TokenSigningService tokenSigningService;
+    private final TokenEncryptionService tokenEncryptionService;
     private final ObjectMapper jsonObjectMapper;
     private final String accumulatorVideoName;
     private final String splitVideosBucketName;
@@ -60,7 +60,7 @@ class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> 
         jsonObjectMapper = new ObjectMapper();
 
         try {
-            tokenSigningService = new TokenSigningService(secret);
+            tokenEncryptionService = new TokenEncryptionService(secret);
         } catch (NoSuchAlgorithmException | InvalidKeyException ex) {
             LOG.log(Level.SEVERE, "Could not create hash due to error: " + ex.getMessage(), ex);
             throw new RuntimeException(ex);
@@ -110,7 +110,7 @@ class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> 
 
         final String s3UrlNewVideo = String.format("s3://%s/%s", splitVideosBucketName, event.getKey());
 
-        final String hash = tokenSigningService.createHashFrom(challengeId, participantId);
+        final String hash = tokenEncryptionService.createHashFrom(challengeId, participantId);
         final String s3BucketKey = String.format("%s/%s/%s/%s", challengeId, participantId, hash, accumulatorVideoName);
         final String s3UrlAccumulatorVideo = String.format("s3://%s/%s", accumulatedVideosBucketName, s3BucketKey);
 

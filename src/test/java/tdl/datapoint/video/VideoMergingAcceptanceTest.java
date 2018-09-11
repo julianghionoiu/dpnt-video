@@ -11,7 +11,7 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.rules.TemporaryFolder;
 import org.yaml.snakeyaml.Yaml;
-import tdl.datapoint.video.security.TokenSigningService;
+import tdl.datapoint.video.security.TokenEncryptionService;
 import tdl.datapoint.video.support.LocalS3Bucket;
 import tdl.datapoint.video.support.LocalSQSQueue;
 import tdl.datapoint.video.support.S3Event;
@@ -101,7 +101,7 @@ public class VideoMergingAcceptanceTest {
         challengeId = "TCH";
         participantId = generateId();
         try {
-            final String hash = new TokenSigningService(SOME_SECRET).createHashFrom(challengeId, participantId);
+            final String hash = new TokenEncryptionService(SOME_SECRET).createHashFrom(challengeId, participantId);
             s3AccumulatorVideoDestination = String.format("%s/%s/%s/%s", challengeId, participantId, hash, ACCUMULATOR_VIDEO_FILENAME);
         } catch (NoSuchAlgorithmException | InvalidKeyException ex) {
             throw new RuntimeException(ex);
