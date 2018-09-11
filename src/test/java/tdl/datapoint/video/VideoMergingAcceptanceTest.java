@@ -142,6 +142,7 @@ public class VideoMergingAcceptanceTest {
     public void upload_when_accumulator_video_exists() throws Exception {
         // Given - The participant produces Video files while solving a challenge
         TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/before/" + ACCUMULATOR_VIDEO_FILENAME);
+        assertThat(accumulatorVideo.isPresentAndIsNotEmpty(), is(true));
         localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
         String s3SecondVideoDestination = String.format("%s/%s/screencast_2.mp4", challengeId, participantId);
         TestVideoFile newVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/screencast_20180727T225445.mp4");
