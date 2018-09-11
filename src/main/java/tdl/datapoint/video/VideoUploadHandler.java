@@ -102,9 +102,8 @@ class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> 
 
         String participantId = event.getParticipantId();
         String challengeId = event.getChallengeId();
-
-        String splitVideosBucketName = event.getBucket();
-        final String s3UrlNewVideo = String.format("s3://%s/%s", splitVideosBucketName, event.getKey());
+        
+        final String s3UrlNewVideo = String.format("s3://%s/%s", event.getBucket(), event.getKey());
 
         final String hash = tokenEncryptionService.createHashFrom(challengeId, participantId);
         final String s3BucketKey = String.format("%s/%s/%s/%s", challengeId, participantId, hash, accumulatorVideoName);
