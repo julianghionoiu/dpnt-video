@@ -35,14 +35,7 @@ public class TokenEncryptionService {
         log.debug("Encrypted token (raw): {}", encryptedToken);
         String encodeEncryptedToken = Base64.getUrlEncoder().encodeToString(encryptedToken.getBytes("UTF-8"));
         encodeEncryptedToken = encodeEncryptedToken
-                .replaceAll(":", "0")     // :
-                .replaceAll(";", "0")     // ;
-                .replaceAll("<", "0")     // <
-                .replaceAll("=", "0")     // =
-                .replaceAll(">", "0")     // >
-                .replaceAll("\\?", "0")   // ?
-                .replaceAll("/", "0")     // /
-                .replaceAll("\\\\", "0"); // /
+                .replaceAll("[:;<=>\\?/\\\\]", "0");     // :,;,<,=,>,?,/,\
         log.debug("Encoded encrypted token (Base64): {}", encodeEncryptedToken);
         return encodeEncryptedToken;
     }
