@@ -20,7 +20,7 @@ public class ECSVideoTaskRunner {
 
     private final String taskDefinitionPrefix;
     private final Supplier<RunTaskRequest> runTaskRequestSupplier;
-    private AmazonECS ecsClient;
+    private final AmazonECS ecsClient;
 
     public ECSVideoTaskRunner(AmazonECS ecsClient,
                               String cluster,

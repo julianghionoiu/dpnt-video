@@ -19,8 +19,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 class CompareVideos {
     private static final int ACCUMULATED_VIDEO_EVENT = 0;
-    private String challengeId;
-    private String participantId;
+    private final String challengeId;
+    private final String participantId;
 
     CompareVideos(String challengeId,
                   String participantId) {
