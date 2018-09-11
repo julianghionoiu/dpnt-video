@@ -33,16 +33,13 @@ class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> 
     private final TokenEncryptionService tokenEncryptionService;
     private final ObjectMapper jsonObjectMapper;
     private final String accumulatorVideoName;
-    private final String splitVideosBucketName;
     private final String accumulatedVideosBucketName;
 
     @SuppressWarnings("WeakerAccess")
     public VideoUploadHandler(String accumulatorVideoName,
-                              String splitVideosBucketName,
                               String accumulatedVideosBucketName,
                               String secret) {
         this.accumulatorVideoName = accumulatorVideoName;
-        this.splitVideosBucketName = splitVideosBucketName;
         this.accumulatedVideosBucketName = accumulatedVideosBucketName;
 
         AmazonECS ecsClient = createECSClient(
@@ -89,7 +86,6 @@ class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> 
         try {
             handleS3Event(S3BucketEvent.from(s3EventMap, jsonObjectMapper),
                     accumulatorVideoName,
-                    splitVideosBucketName,
                     accumulatedVideosBucketName
             );
             return "OK";
@@ -101,13 +97,13 @@ class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> 
 
     private void handleS3Event(S3BucketEvent event,
                                String accumulatorVideoName,
-                               String splitVideosBucketName,
                                String accumulatedVideosBucketName) throws UnsupportedEncodingException {
         LOG.info("Process S3 event with: " + event);
 
         String participantId = event.getParticipantId();
         String challengeId = event.getChallengeId();
 
+        String splitVideosBucketName = event.getBucket();
         final String s3UrlNewVideo = String.format("s3://%s/%s", splitVideosBucketName, event.getKey());
 
         final String hash = tokenEncryptionService.createHashFrom(challengeId, participantId);

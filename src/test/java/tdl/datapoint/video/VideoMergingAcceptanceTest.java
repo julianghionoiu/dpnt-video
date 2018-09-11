@@ -87,7 +87,6 @@ public class VideoMergingAcceptanceTest {
 
         videoUploadHandler = new VideoUploadHandler(
                 ACCUMULATOR_VIDEO_FILENAME,
-                TDL_OFFICIAL_SPLIT_VIDEOS,
                 TDL_OFFICIAL_VIDEOS,
                 SOME_SECRET);
 
