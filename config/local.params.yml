@@ -1,6 +1,8 @@
 S3_ENDPOINT: "http://127.0.0.1:9000"
 S3_REGION: "us-east-1"
-S3_BUCKET_ARN: "arn:local:::tdl-official-videos"
+S3_SPLIT_VIDEOS_BUCKET_ARN: "arn:local:::tdl-official-videos"
+S3_ACCUMULATED_VIDEOS_BUCKET_ARN: "arn:local:::tdl-official-videos"
+S3_VIDEO_URL_TOKEN_SECRET: "password"
 
 ECR_BASE_URL: "local_docker_registry"
 

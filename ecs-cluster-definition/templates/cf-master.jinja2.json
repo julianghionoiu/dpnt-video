@@ -41,14 +41,29 @@
                                         "s3:ListBucket",
                                         "s3:ListBucketMultipartUploads"
                                     ],
-                                    "Resource": "{{ S3_BUCKET_ARN }}"
+                                    "Resource": "{{ S3_SPLIT_VIDEOS_BUCKET_ARN }}"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                      "s3:ListBucket",
+                                      "s3:ListBucketMultipartUploads"
+                                    ],
+                                    "Resource": "{{ S3_ACCUMULATED_VIDEOS_BUCKET_ARN }}"
                                 },
                                 {
                                     "Effect": "Allow",
                                     "Action": [
                                         "s3:GetObject"
                                     ],
-                                    "Resource": "{{ S3_BUCKET_ARN }}/*"
+                                    "Resource": "{{ S3_SPLIT_VIDEOS_BUCKET_ARN }}/*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:GetObject"
+                                    ],
+                                    "Resource": "{{ S3_ACCUMULATED_VIDEOS_BUCKET_ARN }}/*"
                                 },
                                 {
                                     "Effect": "Allow",

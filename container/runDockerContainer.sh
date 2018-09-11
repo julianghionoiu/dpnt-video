@@ -32,7 +32,7 @@ fi
 docker run                                                                      \
       ${DOCKER_DEBUG_PARAMS}                                                    \
       --env AWS_ACCESS_KEY_ID=unused                                            \
-      --env AWS_SECRET_KEY=unused                                               \
+      --env AWS_SECRET_ACCESS_KEY=unused                                        \
       --env S3_ENDPOINT=unused                                                  \
       --env S3_REGION=unused                                                    \
       --env SQS_ENDPOINT=unused                                                 \

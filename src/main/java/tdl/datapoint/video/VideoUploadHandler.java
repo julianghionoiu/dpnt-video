@@ -6,14 +6,14 @@ import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.AmazonECSAsyncClientBuilder;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tdl.datapoint.video.processing.ECSVideoTaskRunner;
 import tdl.datapoint.video.processing.S3BucketEvent;
+import tdl.datapoint.video.security.TokenEncryptionService;
 
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,20 +26,21 @@ import static tdl.datapoint.video.ApplicationEnv.ECS_TASK_LAUNCH_TYPE;
 import static tdl.datapoint.video.ApplicationEnv.ECS_VPC_ASSIGN_PUBLIC_IP;
 import static tdl.datapoint.video.ApplicationEnv.ECS_VPC_SECURITY_GROUP;
 import static tdl.datapoint.video.ApplicationEnv.ECS_VPC_SUBNET;
-import static tdl.datapoint.video.ApplicationEnv.S3_ENDPOINT;
-import static tdl.datapoint.video.ApplicationEnv.S3_REGION;
+import static tdl.datapoint.video.ApplicationEnv.S3_VIDEO_URL_TOKEN_SECRET;
 
-public class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> {
+class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> {
     private static final Logger LOG = Logger.getLogger(VideoUploadHandler.class.getName());
     private final ECSVideoTaskRunner ecsVideoTaskRunner;
-    private AmazonS3 s3Client;
-    private ObjectMapper jsonObjectMapper;
+    private final TokenEncryptionService tokenEncryptionService;
+    private final ObjectMapper jsonObjectMapper;
+    private final String accumulatorVideoName;
+    private final String accumulatedVideosBucketName;
 
     @SuppressWarnings("WeakerAccess")
-    public VideoUploadHandler() {
-        s3Client = createS3Client(
-                getEnv(S3_ENDPOINT),
-                getEnv(S3_REGION));
+    public VideoUploadHandler(String accumulatorVideoName,
+                              String accumulatedVideosBucketName) {
+        this.accumulatorVideoName = accumulatorVideoName;
+        this.accumulatedVideosBucketName = accumulatedVideosBucketName;
 
         AmazonECS ecsClient = createECSClient(
                 getEnv(ECS_ENDPOINT),
@@ -54,6 +55,13 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
                 getEnv(ECS_VPC_ASSIGN_PUBLIC_IP));
 
         jsonObjectMapper = new ObjectMapper();
+
+        try {
+            tokenEncryptionService = new TokenEncryptionService(getEnv(S3_VIDEO_URL_TOKEN_SECRET));
+        } catch (NoSuchAlgorithmException | InvalidKeyException ex) {
+            LOG.log(Level.SEVERE, "Could not create hash due to error: " + ex.getMessage(), ex);
+            throw new RuntimeException(ex);
+        }
     }
 
     private static String getEnv(ApplicationEnv key) {
@@ -62,23 +70,6 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
             throw new RuntimeException("[Startup] Environment variable " + key + " not set");
         }
         return env;
-    }
-
-    private static AmazonS3 createS3Client(String endpoint, String region) {
-        AmazonS3ClientBuilder builder = AmazonS3ClientBuilder.standard();
-        builder = builder.withPathStyleAccessEnabled(true)
-                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, region))
-                .withCredentials(new DefaultAWSCredentialsProviderChain());
-        return builder.build();
-    }
-
-    private static AmazonSQS createSQSClient(String serviceEndpoint, String signingRegion) {
-        AwsClientBuilder.EndpointConfiguration endpointConfiguration =
-                new AwsClientBuilder.EndpointConfiguration(serviceEndpoint, signingRegion);
-        return AmazonSQSClientBuilder.standard()
-                .withEndpointConfiguration(endpointConfiguration)
-                .withCredentials(new DefaultAWSCredentialsProviderChain())
-                .build();
     }
 
     private static AmazonECS createECSClient(String serviceEndpoint, String signingRegion) {
@@ -93,7 +84,10 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
     @Override
     public String handleRequest(Map<String, Object> s3EventMap, Context context) {
         try {
-            handleS3Event(S3BucketEvent.from(s3EventMap, jsonObjectMapper));
+            handleS3Event(S3BucketEvent.from(s3EventMap, jsonObjectMapper),
+                    accumulatorVideoName,
+                    accumulatedVideosBucketName
+            );
             return "OK";
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, ex.getMessage(), ex);
@@ -101,12 +95,23 @@ public class VideoUploadHandler implements RequestHandler<Map<String, Object>, S
         }
     }
 
-    private void handleS3Event(S3BucketEvent event) {
+    private void handleS3Event(S3BucketEvent event,
+                               String accumulatorVideoName,
+                               String accumulatedVideosBucketName) throws UnsupportedEncodingException {
         LOG.info("Process S3 event with: " + event);
+
         String participantId = event.getParticipantId();
         String challengeId = event.getChallengeId();
+        
+        final String s3UrlNewVideo = String.format("s3://%s/%s", event.getBucket(), event.getKey());
+
+        final String hash = tokenEncryptionService.createHashFrom(challengeId, participantId);
+        final String s3BucketKey = String.format("%s/%s/%s/%s", challengeId, participantId, hash, accumulatorVideoName);
+        final String s3UrlAccumulatorVideo = String.format("s3://%s/%s", accumulatedVideosBucketName, s3BucketKey);
 
         LOG.info("Triggering ECS to process video for tags");
-        ecsVideoTaskRunner.runVideoTask(event.getBucket(), event.getKey(), participantId, challengeId);
+        ecsVideoTaskRunner.runVideoTask(
+                participantId, challengeId, s3UrlNewVideo, s3UrlAccumulatorVideo, accumulatorVideoName
+        );
     }
 }

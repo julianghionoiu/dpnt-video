@@ -8,9 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 public class S3BucketEvent {
-    private String bucket;
-
-    private String key;
+    private final String bucket;
+    private final String key;
 
     private S3BucketEvent(String bucket, String key) {
         this.bucket = bucket;

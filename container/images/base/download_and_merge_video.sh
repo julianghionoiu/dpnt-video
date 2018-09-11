@@ -17,6 +17,9 @@ function ensure_env {
 
 WORK_DIR=${SCRIPT_CURRENT_DIR}
 
+ensure_env "AWS_ACCESS_KEY_ID"
+ensure_env "AWS_SECRET_ACCESS_KEY"
+
 ensure_env "S3_ENDPOINT"
 ensure_env "S3_REGION"
 
@@ -26,17 +29,43 @@ ensure_env "SQS_QUEUE_URL"
 
 ensure_env "PARTICIPANT_ID"
 ensure_env "CHALLENGE_ID"
+ensure_env "S3_URL_NEW_VIDEO"
+ensure_env "S3_URL_ACCUMULATOR_VIDEO"
+ensure_env "ACCUMULATOR_VIDEO_NAME"
 
 echo  "~~~~~~ Download and merge video into accumulator ~~~~~~" > /dev/null
-### --- do merge video and upload stuff here
+VIDEOS_LIST="mylist.txt"
+echo  "Downloading new screencast and the accumulator videos from the s3 bucket"
+NEW_VIDEO=$(echo ${S3_URL_NEW_VIDEO##*/})
+aws s3 cp "${S3_URL_NEW_VIDEO}" . --endpoint ${S3_ENDPOINT}
+aws s3 ls ${S3_URL_ACCUMULATOR_VIDEO} --endpoint ${S3_ENDPOINT} && \
+          aws s3 cp "${S3_URL_ACCUMULATOR_VIDEO}" . --endpoint ${S3_ENDPOINT} || true
+
+rm ${VIDEOS_LIST} || true
+if [[ -s "${ACCUMULATOR_VIDEO_NAME}" ]]; then
+   echo "file '${ACCUMULATOR_VIDEO_NAME}'" > ${VIDEOS_LIST}
+   echo "file '${NEW_VIDEO}'" >> ${VIDEOS_LIST}
+
+   echo  "Concatenating '${NEW_VIDEO}' at the bottom of '${ACCUMULATOR_VIDEO_NAME}'"
+   cat ${VIDEOS_LIST}
+   ffmpeg -f concat -safe 0 -i ${VIDEOS_LIST} -c copy "new_${ACCUMULATOR_VIDEO_NAME}"
+   rm ${ACCUMULATOR_VIDEO_NAME}
+   mv "new_${ACCUMULATOR_VIDEO_NAME}" ${ACCUMULATOR_VIDEO_NAME}
+else
+   echo  "Copying '${NEW_VIDEO}' into '${ACCUMULATOR_VIDEO_NAME}' as accumulator video does not pre-exist"
+   cp ${NEW_VIDEO} ${ACCUMULATOR_VIDEO_NAME}
+fi
+
+echo  "Uploading the merged video to '${S3_URL_ACCUMULATOR_VIDEO}'"
+aws s3 cp ${ACCUMULATOR_VIDEO_NAME} "${S3_URL_ACCUMULATOR_VIDEO}" --acl public-read --endpoint ${S3_ENDPOINT}
 
 echo  "~~~~~~ Publish results ~~~~~~" > /dev/null
-merged_video_status="n video merged"
-VIDEO_LINK="http://some-url.com/video.mp4"
+BUCKET_AND_KEY=$(echo ${S3_URL_ACCUMULATOR_VIDEO} | cut -c6-) # remove the prefix s3://
+VIDEO_LINK="${S3_ENDPOINT}/${BUCKET_AND_KEY}"
 
 if [[ "${SQS_QUEUE_URL}" != http* ]]; then
     echo "SQS_QUEUE_URL does not seem to be valid. Will print to the console and exit" > /dev/null
-    echo "participant=${PARTICIPANT_ID} challengeId=${CHALLENGE_ID} videoLink=${VIDEO_LINK}"
+    echo "participant=${PARTICIPANT_ID} challengeId=${CHALLENGE_ID} videoLink=\"${VIDEO_LINK}\""
     exit 0
 fi
 

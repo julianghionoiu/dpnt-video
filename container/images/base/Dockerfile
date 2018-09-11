@@ -2,12 +2,14 @@ FROM java:8u111-jdk
 RUN update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 
 RUN apt-get update && apt-get install -qy \
-    python-pip \
-    groff-base \
-    git \
+    python-pip    \
+    libpython-dev \
+    groff-base    \
+    git           \
     libxml2-utils \
-    jq \
-    dos2unix \
+    jq            \
+    dos2unix      \
+    ffmpeg        \
     --no-install-recommends && rm -r /var/lib/apt/lists/*
 RUN pip install awscli
 
