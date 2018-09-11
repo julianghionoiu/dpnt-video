@@ -26,6 +26,7 @@ import static tdl.datapoint.video.ApplicationEnv.ECS_TASK_LAUNCH_TYPE;
 import static tdl.datapoint.video.ApplicationEnv.ECS_VPC_ASSIGN_PUBLIC_IP;
 import static tdl.datapoint.video.ApplicationEnv.ECS_VPC_SECURITY_GROUP;
 import static tdl.datapoint.video.ApplicationEnv.ECS_VPC_SUBNET;
+import static tdl.datapoint.video.ApplicationEnv.S3_VIDEO_URL_TOKEN_SECRET;
 
 class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> {
     private static final Logger LOG = Logger.getLogger(VideoUploadHandler.class.getName());
@@ -37,8 +38,7 @@ class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> 
 
     @SuppressWarnings("WeakerAccess")
     public VideoUploadHandler(String accumulatorVideoName,
-                              String accumulatedVideosBucketName,
-                              String secret) {
+                              String accumulatedVideosBucketName) {
         this.accumulatorVideoName = accumulatorVideoName;
         this.accumulatedVideosBucketName = accumulatedVideosBucketName;
 
@@ -57,7 +57,7 @@ class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> 
         jsonObjectMapper = new ObjectMapper();
 
         try {
-            tokenEncryptionService = new TokenEncryptionService(secret);
+            tokenEncryptionService = new TokenEncryptionService(getEnv(S3_VIDEO_URL_TOKEN_SECRET));
         } catch (NoSuchAlgorithmException | InvalidKeyException ex) {
             LOG.log(Level.SEVERE, "Could not create hash due to error: " + ex.getMessage(), ex);
             throw new RuntimeException(ex);

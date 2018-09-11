@@ -39,10 +39,9 @@ public class VideoMergingAcceptanceTest {
     private static final int WAIT_BEFORE_RETRY_IN_MILLIS = 2000;
     private static final int TASK_FINISH_CHECK_RETRY_COUNT = 10;
 
-    private static final String TDL_OFFICIAL_SPLIT_VIDEOS = "tdl-official-split-videos";
-    private static final String TDL_OFFICIAL_VIDEOS = "tdl-official-videos";
+    private static final String TDL_OFFICIAL_SPLIT_VIDEOS_BUCKET = "tdl-official-split-videos";
+    private static final String TDL_OFFICIAL_VIDEOS_BUCKET = "tdl-official-videos";
     private static final String ACCUMULATOR_VIDEO_FILENAME = "real-recording.mp4";
-    private static final String SOME_SECRET = "password";
 
     private List<RawVideoUpdatedEvent> rawVideoUpdatedEvents;
     private ObjectMapper mapper;
@@ -73,12 +72,12 @@ public class VideoMergingAcceptanceTest {
         localS3SplitVideosBucket = LocalS3Bucket.createInstance(
                 getEnv(ApplicationEnv.S3_ENDPOINT),
                 getEnv(ApplicationEnv.S3_REGION),
-                TDL_OFFICIAL_SPLIT_VIDEOS);
+                TDL_OFFICIAL_SPLIT_VIDEOS_BUCKET);
 
         localS3AccumulatedVideoBucket = LocalS3Bucket.createInstance(
                 getEnv(ApplicationEnv.S3_ENDPOINT),
                 getEnv(ApplicationEnv.S3_REGION),
-                TDL_OFFICIAL_VIDEOS);
+                TDL_OFFICIAL_VIDEOS_BUCKET);
 
         sqsEventQueue = LocalSQSQueue.createInstance(
                 getEnv(ApplicationEnv.SQS_ENDPOINT),
@@ -87,8 +86,8 @@ public class VideoMergingAcceptanceTest {
 
         videoUploadHandler = new VideoUploadHandler(
                 ACCUMULATOR_VIDEO_FILENAME,
-                TDL_OFFICIAL_VIDEOS,
-                SOME_SECRET);
+                TDL_OFFICIAL_VIDEOS_BUCKET
+        );
 
         QueueEventHandlers queueEventHandlers = new QueueEventHandlers();
         rawVideoUpdatedEvents = new ArrayList<>();
@@ -100,7 +99,8 @@ public class VideoMergingAcceptanceTest {
         challengeId = "TCH";
         participantId = generateId();
         try {
-            final String hash = new TokenEncryptionService(SOME_SECRET).createHashFrom(challengeId, participantId);
+            final String hash =
+                    new TokenEncryptionService(getEnv(ApplicationEnv.S3_VIDEO_URL_TOKEN_SECRET)).createHashFrom(challengeId, participantId);
             s3AccumulatorVideoDestination = String.format("%s/%s/%s/%s", challengeId, participantId, hash, ACCUMULATOR_VIDEO_FILENAME);
         } catch (NoSuchAlgorithmException | InvalidKeyException ex) {
             throw new RuntimeException(ex);
