@@ -19,3 +19,4 @@ tmp
 config/live*
 config/dev*
 .private
+*.iml

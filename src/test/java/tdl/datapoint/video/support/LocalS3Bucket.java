@@ -34,6 +34,12 @@ public class LocalS3Bucket {
         return new S3Event(bucket, key);
     }
 
+    public S3Event deleteObject(String key) {
+        s3Client.deleteObject(bucket, key);
+        return new S3Event(bucket, key);
+    }
+
+
     @SuppressWarnings("deprecation")
     private void createBucketIfNotExists(AmazonS3 client, String bucket) {
         if (!client.doesBucketExist(bucket)) {

@@ -18,29 +18,21 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static tdl.datapoint.video.ApplicationEnv.ECS_ENDPOINT;
-import static tdl.datapoint.video.ApplicationEnv.ECS_REGION;
-import static tdl.datapoint.video.ApplicationEnv.ECS_TASK_CLUSTER;
-import static tdl.datapoint.video.ApplicationEnv.ECS_TASK_DEFINITION_PREFIX;
-import static tdl.datapoint.video.ApplicationEnv.ECS_TASK_LAUNCH_TYPE;
-import static tdl.datapoint.video.ApplicationEnv.ECS_VPC_ASSIGN_PUBLIC_IP;
-import static tdl.datapoint.video.ApplicationEnv.ECS_VPC_SECURITY_GROUP;
-import static tdl.datapoint.video.ApplicationEnv.ECS_VPC_SUBNET;
-import static tdl.datapoint.video.ApplicationEnv.S3_VIDEO_URL_TOKEN_SECRET;
+import static tdl.datapoint.video.ApplicationEnv.*;
 
-class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> {
+public class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> {
     private static final Logger LOG = Logger.getLogger(VideoUploadHandler.class.getName());
     private final ECSVideoTaskRunner ecsVideoTaskRunner;
     private final TokenEncryptionService tokenEncryptionService;
     private final ObjectMapper jsonObjectMapper;
-    private final String accumulatorVideoName;
+
     private final String accumulatedVideosBucketName;
+    private final String videoPublishBaseUrl;
 
     @SuppressWarnings("WeakerAccess")
-    public VideoUploadHandler(String accumulatorVideoName,
-                              String accumulatedVideosBucketName) {
-        this.accumulatorVideoName = accumulatorVideoName;
-        this.accumulatedVideosBucketName = accumulatedVideosBucketName;
+    public VideoUploadHandler() {
+        this.accumulatedVideosBucketName = extractBucketNameFromARN(getEnv(S3_VIDEO_ACCUMULATOR_BUCKET_ARN));
+        this.videoPublishBaseUrl = getEnv(VIDEO_PUBLISH_BASE_URL);
 
         AmazonECS ecsClient = createECSClient(
                 getEnv(ECS_ENDPOINT),
@@ -64,6 +56,11 @@ class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> 
         }
     }
 
+    private static String extractBucketNameFromARN(String bucketARN) {
+        String[] parts = bucketARN.split(":");
+        return parts[parts.length - 1];
+    }
+
     private static String getEnv(ApplicationEnv key) {
         String env = System.getenv(key.name());
         if (env == null || env.trim().isEmpty() || "null".equals(env)) {
@@ -84,10 +81,7 @@ class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> 
     @Override
     public String handleRequest(Map<String, Object> s3EventMap, Context context) {
         try {
-            handleS3Event(S3BucketEvent.from(s3EventMap, jsonObjectMapper),
-                    accumulatorVideoName,
-                    accumulatedVideosBucketName
-            );
+            handleS3Event(S3BucketEvent.from(s3EventMap, jsonObjectMapper));
             return "OK";
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, ex.getMessage(), ex);
@@ -95,9 +89,7 @@ class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> 
         }
     }
 
-    private void handleS3Event(S3BucketEvent event,
-                               String accumulatorVideoName,
-                               String accumulatedVideosBucketName) throws UnsupportedEncodingException {
+    private void handleS3Event(S3BucketEvent event) throws UnsupportedEncodingException {
         LOG.info("Process S3 event with: " + event);
 
         String participantId = event.getParticipantId();
@@ -106,12 +98,15 @@ class VideoUploadHandler implements RequestHandler<Map<String, Object>, String> 
         final String s3UrlNewVideo = String.format("s3://%s/%s", event.getBucket(), event.getKey());
 
         final String hash = tokenEncryptionService.createHashFrom(challengeId, participantId);
-        final String s3BucketKey = String.format("%s/%s/%s/%s", challengeId, participantId, hash, accumulatorVideoName);
-        final String s3UrlAccumulatorVideo = String.format("s3://%s/%s", accumulatedVideosBucketName, s3BucketKey);
+        final String publishedVideoPathWithoutBucket = String.format("%s/%s/%s/%s",
+                challengeId, participantId, hash, "codecast.mp4");
+        final String s3AccumulatorVideoUrl = String.format("s3://%s/%s", accumulatedVideosBucketName,
+                publishedVideoPathWithoutBucket);
+        final String videoPublishDestinationUrl = String.format("%s/%s", videoPublishBaseUrl,
+                publishedVideoPathWithoutBucket);
 
         LOG.info("Triggering ECS to process video for tags");
-        ecsVideoTaskRunner.runVideoTask(
-                participantId, challengeId, s3UrlNewVideo, s3UrlAccumulatorVideo, accumulatorVideoName
-        );
+        ecsVideoTaskRunner.runVideoTask(participantId, challengeId, s3UrlNewVideo, s3AccumulatorVideoUrl,
+                videoPublishDestinationUrl);
     }
 }

@@ -40,4 +40,6 @@ docker run                                                                      
       --env SQS_QUEUE_URL=unused                                                \
       --env PARTICIPANT_ID=${PARTICIPANT_ID}                                    \
       --env CHALLENGE_ID=${CHALLENGE_ID}                                        \
+      --env S3_URL_NEW_VIDEO=notset                                             \
+      --env S3_URL_ACCUMULATOR_VIDEO=notset                                     \
       ${base_image_tag}

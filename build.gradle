@@ -42,12 +42,7 @@ dependencies {
             'commons-io:commons-io:2.5',
     )
 
-    compile 'io.humble:humble-video-noarch:'+humbleVideoVersion
-
-    compile 'org.slf4j:slf4j-api:1.7.25'
-
-    testCompile 'org.projectlombok:lombok:1.16.16'
-
+    testCompile 'io.humble:humble-video-noarch:'+humbleVideoVersion
     testCompile 'io.humble:humble-video-all:'+humbleVideoVersion
 
     testCompile('junit:junit:4.12') {

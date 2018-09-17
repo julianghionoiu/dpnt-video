@@ -1,15 +1,9 @@
 package tdl.datapoint.video.video;
 
-import io.humble.video.Decoder;
-import io.humble.video.Demuxer;
-import io.humble.video.DemuxerStream;
-import io.humble.video.MediaDescriptor;
-import io.humble.video.MediaPacket;
-import io.humble.video.MediaPicture;
-import io.humble.video.Rational;
+import io.humble.video.*;
 import io.humble.video.awt.MediaPictureConverter;
 import io.humble.video.awt.MediaPictureConverterFactory;
-import lombok.extern.slf4j.Slf4j;
+import tdl.datapoint.video.VideoUploadHandler;
 import tdl.datapoint.video.output.ImageOutput;
 import tdl.datapoint.video.output.ImageOutputException;
 import tdl.datapoint.video.time.TimeSource;
@@ -20,9 +14,12 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-@Slf4j
 public class VideoPlayer {
+    private static final Logger LOG = Logger.getLogger(VideoUploadHandler.class.getName());
+
     private final ImageOutput imageOutput;
     private final TimeSource timeSource;
     private Demuxer demuxer;
@@ -32,10 +29,12 @@ public class VideoPlayer {
     private Rational streamTimebase;
     private Rational systemTimeBase;
     private long previousStreamEndTime;
+    private LocalLoggerAdapter log;
 
     public VideoPlayer(ImageOutput imageOutput, TimeSource timeSource) {
         this.imageOutput = imageOutput;
         this.timeSource = timeSource;
+        this.log = new LocalLoggerAdapter();
     }
 
     public void open(String filename) throws VideoPlayerException {
@@ -214,5 +213,15 @@ public class VideoPlayer {
         }
 
         return Optional.empty();
+    }
+
+    private static class LocalLoggerAdapter {
+        void debug(String pattern, Object value) {
+            LOG.log(Level.FINE, pattern, value);
+        }
+
+        void warn(String message, Exception e) {
+            LOG.log(Level.SEVERE, message, e);
+        }
     }
 }

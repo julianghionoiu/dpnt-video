@@ -1,7 +1,7 @@
 S3_ENDPOINT: "http://127.0.0.1:9000"
 S3_REGION: "us-east-1"
-S3_SPLIT_VIDEOS_BUCKET_ARN: "arn:local:::tdl-official-videos"
-S3_ACCUMULATED_VIDEOS_BUCKET_ARN: "arn:local:::tdl-official-videos"
+S3_VIDEO_CLIENT_UPLOAD_BUCKET_ARN: "arn:local:s3:::tdl-test-video-upload"
+S3_VIDEO_ACCUMULATOR_BUCKET_ARN: "arn:local:s3:::tdl-test-video-accumulator"
 S3_VIDEO_URL_TOKEN_SECRET: "password"
 
 ECR_BASE_URL: "local_docker_registry"
@@ -20,7 +20,9 @@ ECS_VPC_ASSIGN_PUBLIC_IP: "ENABLED"
 SQS_ENDPOINT: "http://127.0.0.1:9324"
 SQS_REGION: "elasticmq"
 SQS_QUEUE_URL: "http://127.0.0.1:9324/queue/participant-events"
-SQS_QUEUE_ARN: "arn:local:::participant-events"
+SQS_QUEUE_ARN: "arn:local:sqs:::participant-events"
+
+VIDEO_PUBLISH_BASE_URL: "http://localhost:9000/tdl-test-video-accumulator"
 
 # TestOnly - Used by the local-ecs to connect to local-s3
 AWS_ACCESS_KEY_ID: "local_test_access_key"

@@ -12,11 +12,7 @@ import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.rules.TemporaryFolder;
 import org.yaml.snakeyaml.Yaml;
 import tdl.datapoint.video.security.TokenEncryptionService;
-import tdl.datapoint.video.support.LocalS3Bucket;
-import tdl.datapoint.video.support.LocalSQSQueue;
-import tdl.datapoint.video.support.S3Event;
-import tdl.datapoint.video.support.SNSEvent;
-import tdl.datapoint.video.support.TestVideoFile;
+import tdl.datapoint.video.support.*;
 import tdl.participant.queue.connector.EventProcessingException;
 import tdl.participant.queue.connector.QueueEventHandlers;
 import tdl.participant.queue.connector.SqsEventQueue;
@@ -34,17 +30,17 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class VideoMergingAcceptanceTest {
     private static final Context NO_CONTEXT = null;
     private static final int WAIT_BEFORE_RETRY_IN_MILLIS = 2000;
-    private static final int TASK_FINISH_CHECK_RETRY_COUNT = 10;
+    private static final int TASK_FINISH_CHECK_RETRY_COUNT = 5;
 
-    private static final String TDL_OFFICIAL_SPLIT_VIDEOS_BUCKET = "tdl-official-split-videos";
-    private static final String TDL_OFFICIAL_VIDEOS_BUCKET = "tdl-official-videos";
-    private static final String ACCUMULATOR_VIDEO_FILENAME = "real-recording.mp4";
+    private static final String S3_VIDEO_CLIENT_UPLOAD_BUCKET = "tdl-test-video-upload";
+    private static final String ACCUMULATOR_BUCKET = "tdl-test-video-accumulator";
+    private static final String ACCUMULATOR_VIDEO_FILENAME = "codecast.mp4";
 
     private List<RawVideoUpdatedEvent> rawVideoUpdatedEvents;
     private ObjectMapper mapper;
@@ -75,22 +71,19 @@ public class VideoMergingAcceptanceTest {
         localS3SplitVideosBucket = LocalS3Bucket.createInstance(
                 getEnv(ApplicationEnv.S3_ENDPOINT),
                 getEnv(ApplicationEnv.S3_REGION),
-                TDL_OFFICIAL_SPLIT_VIDEOS_BUCKET);
+                S3_VIDEO_CLIENT_UPLOAD_BUCKET);
 
         localS3AccumulatedVideoBucket = LocalS3Bucket.createInstance(
                 getEnv(ApplicationEnv.S3_ENDPOINT),
                 getEnv(ApplicationEnv.S3_REGION),
-                TDL_OFFICIAL_VIDEOS_BUCKET);
+                ACCUMULATOR_BUCKET);
 
         sqsEventQueue = LocalSQSQueue.createInstance(
                 getEnv(ApplicationEnv.SQS_ENDPOINT),
                 getEnv(ApplicationEnv.SQS_REGION),
                 getEnv(ApplicationEnv.SQS_QUEUE_URL));
 
-        videoUploadHandler = new VideoUploadHandler(
-                ACCUMULATOR_VIDEO_FILENAME,
-                TDL_OFFICIAL_VIDEOS_BUCKET
-        );
+        videoUploadHandler = new VideoUploadHandler();
 
         QueueEventHandlers queueEventHandlers = new QueueEventHandlers();
         rawVideoUpdatedEvents = new ArrayList<>();
@@ -108,7 +101,7 @@ public class VideoMergingAcceptanceTest {
         } catch (NoSuchAlgorithmException | InvalidKeyException ex) {
             throw new RuntimeException(ex);
         }
-        compareVideos = new CompareVideos(challengeId, participantId);
+        compareVideos = new CompareVideos();
     }
 
     @After
@@ -118,34 +111,42 @@ public class VideoMergingAcceptanceTest {
 
     @Test
     public void upload_first_video_when_accumulator_does_not_exist_yet() throws Exception {
-        // Given - The participant produces Video files while solving a challenge
-        TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/before/" + ACCUMULATOR_VIDEO_FILENAME);
-        localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
-        assertThat(accumulatorVideo.isNotPresentOrIsEmpty(), is(true));
-        String s3destination = String.format("%s/%s/screencast_1.mp4", challengeId, participantId);
-        TestVideoFile newVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/screencast_20180727T144854.mp4");
+        // Given - Accumulator is empty
+        localS3AccumulatedVideoBucket.deleteObject(s3AccumulatorVideoDestination);
+
+        // And participant is generating a new video
+        TestVideoFile newVideo = new TestVideoFile("tdl/datapoint/video/first_video_upload/01_when_new_video.mp4");
+        String s3UploadDestination = String.format("%s/%s/new_video.mp4", challengeId, participantId);
 
         // When - Upload event happens
-        S3Event s3Event = localS3SplitVideosBucket.putObject(newVideo.asFile(), s3destination);
+        S3Event s3Event = localS3SplitVideosBucket.putObject(newVideo.asFile(), s3UploadDestination);
         videoUploadHandler.handleRequest(
                 convertToMap(wrapAsSNSEvent(s3Event)),
                 NO_CONTEXT);
 
-        waitForQueueToReceiveEvents();
+        waitForQueueToReceiveEvents(rawVideoUpdatedEvents, 1);
 
-        // Then - Raw video uploaded events are computed for the deploy tags
-        compareVideos.assertThatTheVideosMatchAfterMerging(rawVideoUpdatedEvents,
-                "tdl/datapoint/video/first_video_upload/after/" + ACCUMULATOR_VIDEO_FILENAME);
+        // Then - A raw video updated event was generated for the participant and challenge
+        RawVideoUpdatedEvent rawVideoUploaded = rawVideoUpdatedEvents.get(0);
+        assertThat("participantId matching", rawVideoUploaded.getParticipant(), equalTo(participantId));
+        assertThat("challengeId matching", rawVideoUploaded.getChallengeId(), equalTo(challengeId));
+
+        // Then - The accumulated video matches expected
+        TestVideoFile expectedAccumulatedVideo = new TestVideoFile(
+                "tdl/datapoint/video/first_video_upload/02_then_expected_accumulator.mp4");
+        RemoteVideoFile actualAccumulatedVideo = new RemoteVideoFile(rawVideoUploaded.getVideoLink());
+        compareVideos.assertThatVideoFilesAreTheSame(expectedAccumulatedVideo, actualAccumulatedVideo);
     }
 
     @Test
     public void upload_when_accumulator_video_exists() throws Exception {
-        // Given - The participant produces Video files while solving a challenge
-        TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/before/" + ACCUMULATOR_VIDEO_FILENAME);
-        assertThat(accumulatorVideo.isPresentAndIsNotEmpty(), is(true));
+        // Given - Accumulator contains an existing video file
+        TestVideoFile accumulatorVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/01_given_exiting_recording.mp4");
         localS3AccumulatedVideoBucket.putObject(accumulatorVideo.asFile(), s3AccumulatorVideoDestination);
+
+        // And participant is generating a new video
+        TestVideoFile newVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/02_when_new_video.mp4");
         String s3SecondVideoDestination = String.format("%s/%s/screencast_2.mp4", challengeId, participantId);
-        TestVideoFile newVideo = new TestVideoFile("tdl/datapoint/video/second_video_upload/screencast_20180727T225445.mp4");
 
         // When - Upload event happens
         S3Event s3Event = localS3SplitVideosBucket.putObject(newVideo.asFile(), s3SecondVideoDestination);
@@ -153,11 +154,18 @@ public class VideoMergingAcceptanceTest {
                 convertToMap(wrapAsSNSEvent(s3Event)),
                 NO_CONTEXT);
 
-        waitForQueueToReceiveEvents();
+        waitForQueueToReceiveEvents(rawVideoUpdatedEvents, 1);
 
-        // Then - Raw video uploaded events are computed for the deploy tags
-        compareVideos.assertThatTheVideosMatchAfterMerging(rawVideoUpdatedEvents,
-                "tdl/datapoint/video/second_video_upload/after/" + ACCUMULATOR_VIDEO_FILENAME);
+        // Then - A raw video updated event was generated for the participant and challenge
+        RawVideoUpdatedEvent rawVideoUploaded = rawVideoUpdatedEvents.get(0);
+        assertThat("participantId matching", rawVideoUploaded.getParticipant(), equalTo(participantId));
+        assertThat("challengeId matching", rawVideoUploaded.getChallengeId(), equalTo(challengeId));
+
+        // Then - The accumulated video matches expected
+        TestVideoFile expectedAccumulatedVideo = new TestVideoFile(
+                "tdl/datapoint/video/second_video_upload/03_then_expected_accumulator.mp4");
+        RemoteVideoFile actualAccumulatedVideo = new RemoteVideoFile(rawVideoUploaded.getVideoLink());
+        compareVideos.assertThatVideoFilesAreTheSame(expectedAccumulatedVideo, actualAccumulatedVideo);
     }
 
     //~~~~~~~~~~ Helpers ~~~~~~~~~~~~~`
@@ -194,11 +202,19 @@ public class VideoMergingAcceptanceTest {
         return mapper.writeValueAsString(snsEvent.asJsonNode());
     }
 
-    private void waitForQueueToReceiveEvents() throws InterruptedException {
+    @SuppressWarnings("SameParameterValue")
+    private static void waitForQueueToReceiveEvents(List<RawVideoUpdatedEvent> rawVideoUpdatedEvents,
+                                                    int expectedEvents) throws InterruptedException {
         int retryCtr = 0;
-        while ((rawVideoUpdatedEvents.size() < 3) && (retryCtr < TASK_FINISH_CHECK_RETRY_COUNT)) {
+        while ((rawVideoUpdatedEvents.size() < expectedEvents) && (retryCtr < TASK_FINISH_CHECK_RETRY_COUNT)) {
+            System.out.println("Waiting for queue to receive events ..");
             Thread.sleep(WAIT_BEFORE_RETRY_IN_MILLIS);
             retryCtr++;
+        }
+
+        if (rawVideoUpdatedEvents.size() < expectedEvents) {
+            throw new AssertionError(String.format("Have not received the expected number of queue events %d, actual %d",
+                    expectedEvents, rawVideoUpdatedEvents.size()));
         }
     }
 }

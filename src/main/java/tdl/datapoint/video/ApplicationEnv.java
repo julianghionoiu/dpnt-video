@@ -3,6 +3,7 @@ package tdl.datapoint.video;
 public enum ApplicationEnv {
     S3_ENDPOINT,
     S3_REGION,
+    S3_VIDEO_ACCUMULATOR_BUCKET_ARN,
     S3_VIDEO_URL_TOKEN_SECRET,
 
     ECS_ENDPOINT,
@@ -17,4 +18,6 @@ public enum ApplicationEnv {
     SQS_ENDPOINT,
     SQS_REGION,
     SQS_QUEUE_URL,
+
+    VIDEO_PUBLISH_BASE_URL
 }
