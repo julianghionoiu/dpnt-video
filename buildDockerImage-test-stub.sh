@@ -1,0 +1,1 @@
+docker build --tag python37-dpnt-video:0.1 --file Dockerfile-test-stub .

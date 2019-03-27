@@ -1,0 +1,32 @@
+FROM python:3.7.2-stretch
+
+RUN pip3.7 install --user pyyaml 
+RUN pip3.7 install --user request
+RUN python3.7 -m pip install --user httplib2
+
+COPY --from=java:8u111-jdk /usr/lib/jvm /usr/lib/jvm
+
+ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+ENV PATH=$JAVA_HOME/bin:$PATH
+ENV AWS_ACCESS_KEY_ID=local_test_access_key
+ENV AWS_SECRET_ACCESS_KEY=local_test_secret_key
+
+EXPOSE 9000
+EXPOSE 9324
+EXPOSE 9988
+
+RUN echo $JAVA_HOME
+RUN echo $PATH
+RUN java -version
+
+RUN mkdir -p /root/.aws
+RUN echo "[default]" > /root/.aws/config
+RUN echo "region = amazonsqs" >> /root/.aws/config
+RUN echo "output = json" >> /root/.aws/config
+RUN cat /root/.aws/config
+
+ENV AWS_PROFILE=befaster
+RUN echo "[befaster]" > /root/.aws/credentials
+RUN echo "aws_access_key_id = local_test_access_key" >> /root/.aws/credentials
+RUN echo "aws_secret_access_key = local_test_secret_key" >> /root/.aws/credentials
+RUN cat /root/.aws/credentials
