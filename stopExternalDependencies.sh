@@ -6,17 +6,17 @@ set -o pipefail
 
 stopLocalS3() {
     echo "~~~~~~~~~~ Stopping Local S3 service (stubbing AWS S3 service) ~~~~~~~~~"
-    python local-s3/minio-wrapper.py stop
+    python3.7 local-s3/minio-wrapper.py stop
 }
 
 stopLocalSQS() {
     echo "~~~~~~~~~~ Stopping Local SQS service (stubbing AWS SQS service) ~~~~~~~~~"
-    python local-sqs/elasticmq-wrapper.py stop
+    python3.7 local-sqs/elasticmq-wrapper.py stop
 }
 
 stopLocalECS() {
     echo "~~~~~~~~~~ Stopping Local ECS service (stubbing AWS ECS service) ~~~~~~~~~"
-    python local-ecs/ecs-server-wrapper.py stop
+    python3.7 local-ecs/ecs-server-wrapper.py stop
 }
 
 stopLocalS3
