@@ -33,11 +33,17 @@ The base container image needs to be build and tagged as `latest`:
 
 Start the local ECS simulator. The simulator will use the containers available in the local Docker registry.
 
-Try the below first:
+Try the below first (depending on the OS you are running on):
 
 ```bash 
 ping host.docker.internal
+ping docker.for.mac.host.internal
+ping docker.for.mac.localhost
+ping docker.for.win.host.internal
+ping docker.for.win.localhost
 ```
+
+Pick the one that is successful as a value the environment variable DOCKER_HOST_WITHIN_CONTAINER.
 
 ### Start the local ECS simulator (manually)
 
