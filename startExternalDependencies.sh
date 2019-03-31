@@ -14,7 +14,7 @@ startLocalECS() {
             DOCKER_HOST_WITHIN_CONTAINER=172.17.0.1 python3.7 local-ecs/ecs-server-wrapper.py start config/local.params.yml
         fi
     else
-        python3.7 local-ecs/ecs-server-wrapper.py start config/local.params.yml
+        DOCKER_HOST_WITHIN_CONTAINER=docker.for.mac.host.internal python3.7 local-ecs/ecs-server-wrapper.py start config/local.params.yml
     fi
 }
 

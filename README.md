@@ -20,8 +20,8 @@ git submodule update --init
 
 ### Start the local S3 and SQS simulators (manually)
 ```bash
-python local-sqs/elasticmq-wrapper.py start
-python local-s3/minio-wrapper.py start config/local.params.yml
+python3.7 local-sqs/elasticmq-wrapper.py start
+python3.7 local-s3/minio-wrapper.py start config/local.params.yml
 ```
 
 The base container image needs to be build and tagged as `latest`:
@@ -33,18 +33,24 @@ The base container image needs to be build and tagged as `latest`:
 
 Start the local ECS simulator. The simulator will use the containers available in the local Docker registry.
 
-Try the below first:
+Try the below first (depending on the OS you are running on):
 
 ```bash 
 ping host.docker.internal
+ping docker.for.mac.host.internal
+ping docker.for.mac.localhost
+ping docker.for.win.host.internal
+ping docker.for.win.localhost
 ```
+
+Pick the one that is successful as a value the environment variable DOCKER_HOST_WITHIN_CONTAINER.
 
 ### Start the local ECS simulator (manually)
 
 If there is response from the command in the previous section, then run the below command:
 
 ```bash
-python local-ecs/ecs-server-wrapper.py start config/local.params.yml
+python3.7 local-ecs/ecs-server-wrapper.py start config/local.params.yml
 ```
 
 Otherwise see below:
@@ -55,12 +61,12 @@ https://docs.docker.com/docker-for-mac/networking/#use-cases-and-workarounds.
 Also see https://stackoverflow.com/questions/48546124/what-is-linux-equivalent-of-docker-for-mac-host-internal (especially for Windows or MacOS)
 If this is not supported on your machine, you have the option of changing the hostname used to locate the Docker host:
 ```bash
-DOCKER_HOST_WITHIN_CONTAINER=host.docker.internal python local-ecs/ecs-server-wrapper.py start config/local.params.yml
+DOCKER_HOST_WITHIN_CONTAINER=host.docker.internal python3.7 local-ecs/ecs-server-wrapper.py start config/local.params.yml
 ```
 or
 
 ```bash
-DOCKER_HOST_WITHIN_CONTAINER=n.n.n.n python local-ecs/ecs-server-wrapper.py start config/local.params.yml
+DOCKER_HOST_WITHIN_CONTAINER=n.n.n.n python3.7 local-ecs/ecs-server-wrapper.py start config/local.params.yml
 ```
 
 #### Linux

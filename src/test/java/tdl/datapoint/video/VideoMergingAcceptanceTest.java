@@ -35,8 +35,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class VideoMergingAcceptanceTest {
     private static final Context NO_CONTEXT = null;
-    private static final int WAIT_BEFORE_RETRY_IN_MILLIS = 2000;
-    private static final int TASK_FINISH_CHECK_RETRY_COUNT = 5;
+    private static final int WAIT_BEFORE_RETRY_IN_MILLIS = 3000;
+    private static final int TASK_FINISH_CHECK_RETRY_COUNT = 10;
 
     private static final String S3_VIDEO_CLIENT_UPLOAD_BUCKET = "tdl-test-video-upload";
     private static final String ACCUMULATOR_BUCKET = "tdl-test-video-accumulator";
