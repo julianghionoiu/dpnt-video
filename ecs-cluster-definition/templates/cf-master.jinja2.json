@@ -80,6 +80,6 @@
                 ]
             }
         },
-        "TaskDefinitionBase": {{ taskMacro.baseTask('base', '0.1') }},
+        "TaskDefinitionBase": {{ taskMacro.baseTask('base', '0.2') }},
     }
 }

@@ -10,7 +10,7 @@ DEFAULT_IMAGE_PREFIX="accelerate-io/dpnt-video-"
 BASE="base"
 
 function die() { echo >&2 $1; exit 1; }
-[ "$#" -eq 2 ] || die "Usage: $0 ECR_URL"
+[ "$#" -eq 1 ] || die "Usage: $0 ECR_URL"
 ECR_URL=$1
 
 echo "Logging into AWS ECR"
