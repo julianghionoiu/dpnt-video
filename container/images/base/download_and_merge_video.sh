@@ -17,9 +17,6 @@ function ensure_env {
 
 WORK_DIR=${SCRIPT_CURRENT_DIR}
 
-ensure_env "AWS_ACCESS_KEY_ID"
-ensure_env "AWS_SECRET_ACCESS_KEY"
-
 ensure_env "S3_ENDPOINT"
 ensure_env "S3_REGION"
 

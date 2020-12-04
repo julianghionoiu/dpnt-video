@@ -7,9 +7,9 @@ RUN python3 --version
 RUN pip --version
 
 # Install Java 8
-COPY --from=java:8u111-jdk /usr/lib/jvm /usr/lib/jvm
+COPY --from=openjdk:8u275-jdk /usr/local/openjdk-8 /usr/local/openjdk-8
 
-ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+ENV JAVA_HOME=/usr/local/openjdk-8
 ENV PATH=${JAVA_HOME}/bin:${PATH}
 
 RUN echo "JAVA_HOME=${JAVA_HOME}"

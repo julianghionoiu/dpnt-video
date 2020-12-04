@@ -140,17 +140,12 @@ docker logs <container_id>
 
 ## Container deployment
 
-See the AWS ECR registry instructions on how to deploy a container into AWS
+See the `container` folder
 
 
 ## Cluster deployment
 
-Define an environment by duplicating the configuration file in `./config`
-
-Trigger AWS CloudFormation to deploy or update an ECS Cluster
-```bash
-./ecs-cluster-definition/deploy.sh dev
-```
+See the `ecs-cluster-definition` folder
 
 ## Lambda deployment
 

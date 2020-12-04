@@ -77,5 +77,5 @@ In case the folder does not have a `.git` folder, create one by running `git ini
 ## To deploy
 
 ```shell script
-./deployToECR.sh base 577770582757.dkr.ecr.eu-west-1.amazonaws.com
+./deployToECR.sh 577770582757.dkr.ecr.eu-west-1.amazonaws.com
 ```

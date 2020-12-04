@@ -18,6 +18,9 @@ BUILD_DIR="${SCRIPT_CURRENT_DIR}/.build"
 PARAMETERS_FILE="${SCRIPT_CURRENT_DIR}/../config/${STAGE}.params.yml"
 TEMPLATE_FILE="${BUILD_DIR}/cloudformation-template-ecs-cluster-${STAGE}.json"
 
+echo "Compile cloudformation template" > /dev/null
+python ${SCRIPT_CURRENT_DIR}/compile_cf_template.py ${STAGE} ${PARAMETERS_FILE} ${TEMPLATE_FILE}
+
 echo "Sanity check the template" > /dev/null
 aws cloudformation validate-template \
     --template-body "file://${TEMPLATE_FILE}"
